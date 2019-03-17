@@ -17,8 +17,6 @@
 
 extern char read_port_data[CACHE_LINE];
 
-
-
 void IcacheReset()
 {
     icache_write_busy = icache_write_busy_bk =0;
@@ -38,8 +36,8 @@ void IcacheSwap(int addr)
         if(mem_read1_ready)
         {
             ReadMemLine(addr);
-            memcpy(icache_bak[(addr/256)%8][line],read_port_data,CACHE_LINE);
-            icache_tag_bk[(addr/256)%8][line]=(addr&0xFFFFFC00)|1;
+            memcpy(icache_bak[(addr/CACHE_LINE)%32][line],read_port_data,CACHE_LINE);
+            icache_tag_bk[(addr/CACHE_LINE)%32][line]=(addr&0xFFFFFC00)|1;
             icache_need_refresh = 1;
             icache_write_busy_bk = 0;
             return;
@@ -51,7 +49,7 @@ void IcacheSwap(int addr)
     }
     else
     {
-        line = (lru[(addr/256)%8]+1)%4;
+        line = (lru[(addr/CACHE_LINE)%32]+1)%4;
         icache_write_busy_bk =1;
         ApplyReadPort(1);
     }
@@ -59,7 +57,7 @@ void IcacheSwap(int addr)
 
 s_icache_res IcacheRead(unsigned int addr)
 {
-    int group = (addr/CACHE_LINE)%8;
+    int group = (addr/CACHE_LINE)%32;
     int line = 0;
     int i = 0;
     icache_res.hit =0;
@@ -84,7 +82,7 @@ s_icache_res IcacheRead(unsigned int addr)
         for( i = 3; i >= 0; i--)
         {
             icache_res.ins <<= 8;
-            icache_res.ins |= icache[group][line][addr%256+i];
+            icache_res.ins |= icache[group][line][addr%CACHE_LINE+i];
         }
         lru[group] = line;
     }
@@ -95,12 +93,12 @@ s_icache_res IcacheRead(unsigned int addr)
     return icache_res;
 }
 
-unsigned int PredBranchAddr(int ins_pc)
+unsigned int PredBranchIf(int ins_pc)
 {
     int jump =0;
-    if((pred[(ins_pc/4)%256]>>2*(ins_pc%4))&0x03>=1)
+    if((pred[(ins_pc/4)%PRED_SIZE]&0x00000003)>1)
         jump =1;
-    return jump?pred_addr[ins_pc%1024]:ins_pc+4;
+    return jump;
 }
 
 void ResetDecodeTable()
@@ -110,7 +108,8 @@ void ResetDecodeTable()
     type_table[U_TYPE][0] = 0b00110111;
     type_table[U_TYPE][1] = 0b00010111;
     type_table[J_TYPE][0] = 0b01101111;
-
+    type_table[I_TYPE][0] = 0b01100111;
+    type_table[B_TYPE][0] = 0b01100011;
     type_table[R_TYPE][0] = 0b00110011;
     /*************unit_table section*************/
    
@@ -149,9 +148,60 @@ unsigned char RtypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsi
         *op_code=ALU_SUB;
         res = 1;
     }
+    return res;
 }
 
-unsigned char GetInsData(WORD ins,BYTE op_type,BYTE imm_ext,s_ins_data* ins_data)
+unsigned char JtypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsigned char*issue_sta)
+{
+    BYTE res=1;
+    *op_code=JU_JAL;
+    *issue_sta=JU;
+    return res;
+}
+
+unsigned char BtypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsigned char*issue_sta)
+{
+    BYTE res=0;
+    *issue_sta=JU;
+    switch (op2)
+    {
+        case 0:
+            *op_code=JU_BEQ ;
+            res=1;
+            break;
+    
+        case 1:
+            *op_code=JU_BNE ;
+            res=1;
+            break;
+    
+        case 4:
+            *op_code=JU_BLT ;
+            res=1;
+            break;
+        
+        case 5:
+            *op_code=JU_BGE ;
+            res=1;
+            break;
+
+        case 6:
+            *op_code=JU_BLTU ;
+            res=1;
+            break;
+
+        case 7:
+            *op_code=JU_BGEU ;
+            res=1;
+            break;
+
+        default:
+            break;
+    }
+    return res;
+}
+
+unsigned char GetInsData(WORD ins,BYTE op_type,BYTE op1,BYTE op2,s_ins_data* ins_data)
 {
     BYTE res=0;
     memset(ins_data->data_sel,0,sizeof(ins_data->data_sel));
@@ -161,7 +211,18 @@ unsigned char GetInsData(WORD ins,BYTE op_type,BYTE imm_ext,s_ins_data* ins_data
     }
     else if (op_type==J_TYPE) 
     {
-        /* code */
+        ins_data->op_rd=(ins>>7)&0x1F;
+        ins_data->data_sel[OP_RD]=1;
+        int imm = 0; 
+        imm |= (ins>>21) & 0x000003FF;
+        imm |= (ins>>10) & 0x00000400; 
+        imm |= (ins>>1) &  0x0007F800;
+        imm |= (ins>>12) & 0x00080000;
+        imm<<=12;
+        imm>>=11;
+        ins_data->op_imm=imm;
+        ins_data->data_sel[OP_IMM]=1;
+        res = 1;
     }
     else if (op_type==I_TYPE)
     {
@@ -169,7 +230,20 @@ unsigned char GetInsData(WORD ins,BYTE op_type,BYTE imm_ext,s_ins_data* ins_data
     }
     else if (op_type==B_TYPE)
     {
-        /* code */
+        ins_data->op_rs1=(ins>>15) & 0x1F;
+        ins_data->data_sel[OP_RS1]=1;
+        ins_data->op_rs2=(ins>>20) & 0x1F;
+        ins_data->data_sel[OP_RS2]=1;
+        int imm = 0;
+        imm |= (ins>>8) & 0x0000000F;
+        imm |= (ins>>21) &0x000003F0;
+        imm |= (ins<<3) & 0x00000400;
+        imm |= (ins>>20) &0x00000800;
+        imm<<=20;
+        imm>>=19;
+        ins_data->op_imm=imm;
+        ins_data->data_sel[OP_IMM]=1;
+        res=1;
     }
     else if (op_type==S_TYPE)
     {
@@ -178,34 +252,34 @@ unsigned char GetInsData(WORD ins,BYTE op_type,BYTE imm_ext,s_ins_data* ins_data
     else if (op_type==R_TYPE)
     {
         ins_data->op_rs1=(ins>>15)&0x1F;
-        ins_data->data_sel[1]=1;
+        ins_data->data_sel[OP_RS1]=1;
         ins_data->op_rs2=(ins>>20)&0x1F;
-        ins_data->data_sel[2]=1;
+        ins_data->data_sel[OP_RS2]=1;
         ins_data->op_rd =(ins>>7)&0x1F;
-        ins_data->data_sel[3]=1;
+        ins_data->data_sel[OP_RD]=1;
         if ( ins_data->op_rs1<32&& ins_data->op_rs2<32&& ins_data->op_rd<32) 
             res = 1; 
     }
     return res;
 }
 
-void BranchPredict(BYTE op_type,WORD ins,unsigned int* ins_perd,unsigned char*jump_if)
+void BranchPredict(BYTE op_type,WORD ins,unsigned int* ins_pred,unsigned char*jump_if)
 {
     BYTE op_code1=ins&0x7f;
     if (op_type==J_TYPE || op_type==I_TYPE&&op_code1==0b01100111) 
     {
         *jump_if=1;
-        *ins_perd=pred_addr[pc%PRED_SIZE];
+        *ins_pred=pred[(pc/4)%PRED_SIZE]&0xFFFFFFFC;
     }
     else if (op_type==B_TYPE) 
     {
-        *jump_if=PredBranchAddr(pc);
-        *ins_perd=pred_addr[pc%PRED_SIZE];
+        *jump_if=PredBranchIf(pc);
+        *ins_pred=(*jump_if)?pred[(pc/4)%PRED_SIZE]&0xFFFFFFFC:pc+4;
     }
     else
     {
         *jump_if=0;
-        *ins_perd=pc+4;
+        *ins_pred=pc+4;
     }
 }
 
@@ -225,6 +299,7 @@ void FetchModule()
     BYTE imm_ext;
     WORD ins_pred;
     BYTE jump_if;
+    ins_valid=0;
     if(ins==0)
     {
         deliver12_bk.ins_valid = 0;
@@ -249,7 +324,7 @@ void FetchModule()
             break;
 
         case J_TYPE:
-            /* code */
+            ins_valid=JtypeDecode(op1,op2,op3,&op_code,&issue_sta);
             break;
 
         case I_TYPE:
@@ -257,7 +332,7 @@ void FetchModule()
             break;
 
         case B_TYPE:
-            /* code */
+            ins_valid=BtypeDecode(op1,op2,op3,&op_code,&issue_sta);
             break;
 
         case S_TYPE:
@@ -271,8 +346,13 @@ void FetchModule()
         default:
             break;
     }
+    if (!ins_valid) 
+    {
+        deliver12_bk.ins_valid = 0;
+        return;
+    }
     s_ins_data ins_data;
-    ins_valid = GetInsData(ins,op_type,imm_ext,&ins_data);
+    ins_valid = GetInsData(ins,op_type,op1,op2,&ins_data);
     BranchPredict(op_type,ins,&ins_pred,&jump_if);
     deliver12_bk.op_type=op_type;
     deliver12_bk.op_code=op_code;

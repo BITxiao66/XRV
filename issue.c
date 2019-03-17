@@ -33,7 +33,7 @@ void Issue()
                 p=i;
                 break;
             }
-            if (cmt_bus.valid && cmt_bus.user==queue[i].issue_sta) 
+            if (cmt_bus.valid==1 && cmt_bus.user==queue[i].issue_sta) 
             {
                 p=i;
                 break;
@@ -62,7 +62,7 @@ void Issue()
                     Vi=queue[i].imm;
                     Qi=40;
                 }
-                if (cmt_bus.id==i) 
+                if (cmt_bus.valid==1 && cmt_bus.id==i) 
                 {
                     Vi=cmt_bus.res;
                     Qi=40;
@@ -82,7 +82,7 @@ void Issue()
                     Vj=queue[i].imm;
                     Qj=40;
                 }
-                if (cmt_bus.id==i) 
+                if (cmt_bus.valid==1 && cmt_bus.id==i) 
                 {
                     Vj=cmt_bus.res;
                     Qj=40;
@@ -90,7 +90,6 @@ void Issue()
             }
         }
     }
-    
     if (Qi<32) // Read Vi from RegFile
     {
         Vi=ReadReg(Qi);
@@ -114,4 +113,5 @@ void Issue()
     station_bk[issue_sta].Qj=Qj;
     station_bk[issue_sta].Vi=Vi;
     station_bk[issue_sta].Vj=Vj;
+    station_bk[issue_sta].ins_addr=queue[p].ins_addr;
 }

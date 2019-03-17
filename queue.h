@@ -10,4 +10,5 @@ int queue_head_bk;
 int queue_tail;
 int queue_tail_bk;
 int queue_full;
+BYTE need_clean_queue;
 # endif

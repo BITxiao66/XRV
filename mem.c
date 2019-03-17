@@ -4,7 +4,7 @@
  *               : in (1) ICT,CAS and (2) Beijing Institute of Technology .
  *               : This file is used for simulate the memory module of RV .The 
  *               : memory has two read ports and two write ports with 100 cyclces  
- *               : access delay . The memory line size equal to 256 bits and total
+ *               : access delay . The memory line size equal to 32 bytes and total
  *               : capacity is 64MB .
  * Author        : xiaoziyuan 
  * Last Modified : 2019.03.07
@@ -67,10 +67,10 @@ int LoadMemFromFile(char* file_name,int little_endian,unsigned int begin_addr)
         }
         if(!little_endian)
             for(i=0;i<8;i+=2,p++)
-                mem_arry[p/256][p%256]=GetHexValue(str[i],str[i+1]);
+                mem_arry[p/CACHE_LINE][p%CACHE_LINE]=GetHexValue(str[i],str[i+1]);
         else
             for(i=6;i>=0;i-=2,p++)
-                mem_arry[p/256][p%256]=GetHexValue(str[i],str[i+1]);        
+                mem_arry[p/CACHE_LINE][p%CACHE_LINE]=GetHexValue(str[i],str[i+1]);        
     }
     return 1;
 }
@@ -150,9 +150,9 @@ int ApplyWritePort(int cache_port)
 char* ReadMemLine(int addr)
 {
     int p;   
-    for( p = 0; p < 256; p++)
+    for( p = 0; p < CACHE_LINE; p++)
     {
-        read_port_data[p]=mem_arry[addr/256][p];
+        read_port_data[p]=mem_arry[addr/CACHE_LINE][p];
     }
     return read_port_data;
 }
@@ -160,35 +160,35 @@ char* ReadMemLine(int addr)
 void WriteMemLine(int addr,char* src)
 {
     int p;
-    for( p = 0; p < 256; p++)
+    for( p = 0; p < CACHE_LINE; p++)
     {
-        mem_arry[addr/256][p] = src[p];
+        mem_arry[addr/CACHE_LINE][p] = src[p];
     }
 }
 
-void WriteMemByte(int addr,char* src)
+void WriteMemByte(int addr,int src)
 {
     int p;
-    for( p = 0; p < 8; p++)
+    for( p = 0; p < 1; p++)
     {
-        mem_arry[addr/256][p] = src[p];
+        mem_arry[addr/CACHE_LINE][p] = (src>>(8*p))&0xFF;
     }
 }
 
-void WriteMemHalfword(int addr,char* src)
+void WriteMemHalfword(int addr,int src)
 {
     int p;
-    for( p = 0; p < 16; p++)
+    for( p = 0; p < 2; p++)
     {
-        mem_arry[addr/256][p] = src[p];
+        mem_arry[addr/CACHE_LINE][p] = (src>>(8*p))&0xFF;
     }
 }
 
-void WriteMemWord(int addr,char* src)
+void WriteMemWord(int addr,int src)
 {
     int p;
-    for( p = 0; p < 32; p++)
+    for( p = 0; p < 4; p++)
     {
-        mem_arry[addr/256][p] = src[p];
+        mem_arry[addr/CACHE_LINE][p] = (src>>(8*p))&0xFF;
     }
 }

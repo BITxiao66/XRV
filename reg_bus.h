@@ -21,7 +21,7 @@ typedef struct
     WORD op_rs1;
     WORD op_rs2;
     WORD op_rd;
-    WORD op_imm;
+    int op_imm;
     BYTE data_sel[5];
     BYTE issue_sta;
     WORD ins_addr;
@@ -43,7 +43,7 @@ typedef struct
 
 typedef struct 
 {
-    int ins;
+    int data;
     char hit;
 } s_dcache_res;
 
@@ -53,7 +53,7 @@ typedef struct
     WORD op_rs1;
     WORD op_rs2;
     WORD op_rd;
-    WORD op_imm;
+    int op_imm;
     BYTE data_sel[5];
 } s_ins_data;
 
@@ -66,12 +66,13 @@ typedef struct
     BYTE Qj;
     WORD Vi;
     WORD Vj;
-    WORD imm;
+    int imm;
     BYTE Rd;
     WORD ins_addr;
-    BYTE jump_if;
-    WORD ins_pred;
-    WORD ls_addr;
+    BYTE jump_if;   // whether jump ,the result of predict
+    WORD ins_pred;  //the addr predict at fetch phase
+    WORD exe_addr;
+    BYTE exe_jump;  // whether jump ,the result of execute
     BYTE data_sel[4];
 } s_queue_item;
 
@@ -84,8 +85,10 @@ typedef struct
     int Vi;
     int Vj;
     int imm;
+    int ins_addr;
     BYTE valid;
     BYTE clean;
+    BYTE addr_ready;
 } s_station_in;
 
 typedef struct 
@@ -98,7 +101,25 @@ typedef struct
 typedef struct 
 {
     BYTE valid;
-    WORD res;
+    BYTE id;
+    int addr;
+    int res;
+} s_load_out;
+
+typedef struct 
+{
+    BYTE valid;
+    BYTE id;
+    int addr;
+    int res;
+    BYTE jump_if;
+} s_ju_out;
+
+
+typedef struct 
+{
+    BYTE valid;
+    int res;
     BYTE id;
     BYTE user;
     BYTE jump_if;

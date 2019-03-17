@@ -12,7 +12,7 @@
 # define DF_H
 # define QUEUE_SIZE 8
 # define MEM_SIZE   64*1024*1024
-# define CACHE_LINE 256
+# define CACHE_LINE 32
 # define PRED_SIZE  1024
 
 # define DCACHE_FREE 0
@@ -28,7 +28,7 @@
 
 # define ALU      1
 # define MUL_UNIT 2
-# define J_UNIT   3
+# define JU       3
 # define LU       4
 # define SU       5
 
@@ -53,6 +53,15 @@
 # define ALU_LUI 9
 # define ALU_AUI 10
 # define ALU_SLT 11
+
+# define JU_JAL     1
+# define JU_JALR    2
+# define JU_BEQ     3
+# define JU_BNE     4
+# define JU_BLT     5
+# define JU_BGE     6
+# define JU_BLTU    7
+# define JU_BGEU    8
 
 typedef unsigned char   BIT0;   // just use the first bit
 typedef unsigned char   BIT1;
