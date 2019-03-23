@@ -71,7 +71,7 @@ typedef struct
     WORD ins_addr;
     BYTE jump_if;   // whether jump ,the result of predict
     WORD ins_pred;  //the addr predict at fetch phase
-    WORD exe_addr;
+    int exe_addr;
     BYTE exe_jump;  // whether jump ,the result of execute
     BYTE data_sel[4];
 } s_queue_item;
@@ -88,7 +88,7 @@ typedef struct
     int ins_addr;
     BYTE valid;
     BYTE clean;
-    BYTE addr_ready;
+    BYTE addr_ready;//:1 has been ready
 } s_station_in;
 
 typedef struct 

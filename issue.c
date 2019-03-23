@@ -48,13 +48,13 @@ void Issue()
     queue_bk[p].item_status=ISSUED;
     BYTE Qi=queue[p].Qi;
     BYTE Qj=queue[p].Qj;
-    WORD Vi=queue[p].Vi;
-    WORD Vj=queue[p].Vj;
+    int Vi=queue[p].Vi;
+    int Vj=queue[p].Vj;
     if (Qi<40)  // Read vi from queue and result bus
     {
-        for( i = queue_head; i != p; i=(i+1)%QUEUE_SIZE)
+        for( i = (p-1+QUEUE_SIZE)%QUEUE_SIZE; i != (queue_head-1+QUEUE_SIZE)%QUEUE_SIZE; i=(i-1+QUEUE_SIZE)%QUEUE_SIZE)
         {
-            if (queue[i].Rd==Qi) 
+            if (queue[i].Rd==Qi&&Qi) 
             {
                 Qi=i+32;
                 if (queue[i].item_status==FINISH) 
@@ -67,14 +67,15 @@ void Issue()
                     Vi=cmt_bus.res;
                     Qi=40;
                 }
+                break;
             }
         }
     }
     if (Qj<40) 
     {
-        for( i = queue_head; i != p; i=(i+1)%QUEUE_SIZE)
+        for( i = (p-1+QUEUE_SIZE)%QUEUE_SIZE; i != (queue_head-1+QUEUE_SIZE)%QUEUE_SIZE; i=(i-1+QUEUE_SIZE)%QUEUE_SIZE)
         {
-            if (queue[i].Rd==Qj) 
+            if (queue[i].Rd==Qj&&Qj) 
             {
                 Qj=i+32;
                 if (queue[i].item_status==FINISH) 
@@ -87,6 +88,7 @@ void Issue()
                     Vj=cmt_bus.res;
                     Qj=40;
                 }
+                break;
             }
         }
     }
@@ -114,4 +116,11 @@ void Issue()
     station_bk[issue_sta].Vi=Vi;
     station_bk[issue_sta].Vj=Vj;
     station_bk[issue_sta].ins_addr=queue[p].ins_addr;
+    station_bk[issue_sta].addr_ready=0;
+    if (queue[p].issue_sta==LU && Qi>=8) 
+    {
+        queue_bk[p].exe_addr=Vi+queue[p].imm; 
+        station_bk[issue_sta].addr_ready=1;
+    }
+    
 }

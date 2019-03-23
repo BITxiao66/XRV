@@ -12,6 +12,7 @@
 #include "queue.h"
 #include "issue.h"
 #include "cmt.h"
+#include "lsu.h"
 
 void CmtBusUpdate()
 {
@@ -34,6 +35,14 @@ void CmtBusUpdate()
             cmt_bus.jump_if=ju_out.jump_if;
             cmt_bus.addr=ju_out.addr;
             cmt_bus.user=JU;
+            break;
+
+        case LU:
+            cmt_bus.valid=load_out.valid;
+            cmt_bus.addr =load_out.addr;
+            cmt_bus.id   =load_out.id;
+            cmt_bus.res  =load_out.res;
+            cmt_bus.user =LU;
             break;
 
         default:

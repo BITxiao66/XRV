@@ -37,7 +37,7 @@ void IcacheSwap(int addr)
         {
             ReadMemLine(addr);
             memcpy(icache_bak[(addr/CACHE_LINE)%32][line],read_port_data,CACHE_LINE);
-            icache_tag_bk[(addr/CACHE_LINE)%32][line]=(addr&0xFFFFFC00)|1;
+            icache_tag_bk[(addr/CACHE_LINE)%32][line]=(addr&0xFFFFFFE0)|0x00000001;
             icache_need_refresh = 1;
             icache_write_busy_bk = 0;
             return;
@@ -68,7 +68,7 @@ s_icache_res IcacheRead(unsigned int addr)
     }
     for( i = 0; i < 4; i++)
     {
-        if (((icache_tag[group][i] & 0xFFFFFC00) == (addr&0xFFFFFC00))&&((icache_tag[group][i]&0x000000FF)==1)) 
+        if (((icache_tag[group][i] & 0xFFFFFFE0) == (addr&0xFFFFFFE0))&&((icache_tag[group][i]&0x0000001F)==1)) 
         {
             line = i;
             break;
@@ -109,7 +109,10 @@ void ResetDecodeTable()
     type_table[U_TYPE][1] = 0b00010111;
     type_table[J_TYPE][0] = 0b01101111;
     type_table[I_TYPE][0] = 0b01100111;
+    type_table[I_TYPE][1] = 0b00000011;
+    type_table[I_TYPE][2] = 0b00010011;
     type_table[B_TYPE][0] = 0b01100011;
+    type_table[S_TYPE][0] = 0b00100011;
     type_table[R_TYPE][0] = 0b00110011;
     /*************unit_table section*************/
    
@@ -147,6 +150,46 @@ unsigned char RtypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsi
     {
         *op_code=ALU_SUB;
         res = 1;
+    }
+    else if (op2==1)
+    {
+        *op_code=ALU_SLL;
+        res=1;
+    }
+    else if (op2==2)
+    {
+        *op_code=ALU_SLT;
+        res=1;
+    }
+    else if (op2==3)
+    {
+        *op_code=ALU_SLTU;
+        res=1;
+    }
+    else if (op2==4)
+    {
+        *op_code=ALU_XOR;
+        res=1;
+    }
+    else if (op2==5 && op3==0)
+    {
+        *op_code=ALU_SRL;
+        res=1;
+    }
+    else if (op2==5 && op3==0x20)
+    {
+        *op_code=ALU_SRA;
+        res=1;
+    }
+    else if (op2==6)
+    {
+        *op_code=ALU_OR;
+        res=1;
+    }
+    else if (op2==7)
+    {
+        *op_code=ALU_AND;
+        res=1;
     }
     return res;
 }
@@ -201,13 +244,149 @@ unsigned char BtypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsi
     return res;
 }
 
+unsigned char ItypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsigned char*issue_sta)
+{
+    BYTE res=0;
+    if (op1==0b01100111) 
+    {
+        *op_code=JU_JALR;
+        *issue_sta=JU;
+        res=1;
+    }
+    else if (op1==0b00000011) 
+    {
+        *issue_sta=LU;
+        if (op2==0) 
+        {
+            *op_code=LU_LB;
+            res=1;
+        }
+        else if (op2==1) 
+        {
+            *op_code=LU_LH;
+            res=1;
+        }
+        else if (op2==2)
+        {
+            *op_code=LU_LW;
+            res=1;
+        }
+        else if (op2==4)
+        {
+            *op_code=LU_LBU;
+            res=1;
+        }
+        else if (op2==5)
+        {
+            *op_code=LU_LHU;
+            res=1;
+        }
+    }
+    else if (op1==0b00010011)
+    {
+        if (op2==0) 
+        {
+            *op_code=ALU_ADD;
+            res=1;
+        }
+        else if (op2==1)
+        {
+            *op_code=ALU_SLL;
+            res=1;
+        }
+        else if (op2==2)
+        {
+            *op_code=ALU_SLT;
+            res=1;
+        }
+        else if (op2==3)
+        {
+            *op_code=ALU_SLTU;
+            res=1;
+        }
+        else if (op2==4)
+        {
+            *op_code=ALU_XOR;
+            res=1;
+        }
+        else if (op2==5 && op3==0)
+        {
+            *op_code=ALU_SRL;
+            res=1;
+        }
+        else if (op2==5 && op3==0x20)
+        {
+            *op_code=ALU_SRA;
+            res=1;
+        }
+        else if (op2==6)
+        {
+            *op_code=ALU_OR;
+            res=1;
+        }
+        else if (op2==7)
+        {
+            *op_code=ALU_AND;
+            res=1;
+        }
+        *issue_sta=ALU;
+    }
+    
+    return res;
+}
+
+unsigned char StypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsigned char*issue_sta)
+{
+    BYTE res=0;
+    *issue_sta=SU;
+    switch (op2)
+    {
+        case 0:
+            *op_code=SU_SB;
+            res=1;
+            break;
+
+        case 1:
+            *op_code=SU_SH;
+            res=1;
+            break;
+
+        case 2:
+            *op_code=SU_SW;
+            res=1;
+            break;
+
+        default:
+            break;
+    }
+    return res;
+}
+
+unsigned char UtypeDEcode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsigned char*issue_sta)
+{
+    *issue_sta=ALU;
+    if (op1==0b00110111) 
+    {
+        *op_code=ALU_LUI;
+    }
+    else
+    {
+        *op_code=ALU_AUI;
+    } 
+    return 1;
+}
+
 unsigned char GetInsData(WORD ins,BYTE op_type,BYTE op1,BYTE op2,s_ins_data* ins_data)
 {
     BYTE res=0;
     memset(ins_data->data_sel,0,sizeof(ins_data->data_sel));
     if (op_type==U_TYPE) 
     {
-        /* code */
+        ins_data->op_imm=ins & 0xFFFFF000;
+        ins_data->data_sel[OP_IMM]=1;
+        ins_data->op_rd =(ins >> 7) & 0x0000001F;
+        ins_data->data_sel[OP_RD]=1;
+        res=1;
     }
     else if (op_type==J_TYPE) 
     {
@@ -226,7 +405,30 @@ unsigned char GetInsData(WORD ins,BYTE op_type,BYTE op1,BYTE op2,s_ins_data* ins
     }
     else if (op_type==I_TYPE)
     {
-        /* code */
+        if (op1==0b00010011&&(op2==1||op2==5)) 
+        {
+            ins_data->op_imm=(ins>>20)&0x0000001F;
+            ins_data->data_sel[OP_IMM]=1;
+            ins_data->op_rs1=(ins>>15) & 0x1F;
+            ins_data->data_sel[OP_RS1]=1;
+            ins_data->op_rd=(ins>>7) & 0x1F;
+            ins_data->data_sel[OP_RD]=1;
+            res=1;
+        }
+        else
+        {
+            int imm;
+            imm=ins;
+            imm>>=20;
+            ins_data->op_imm=imm;
+            ins_data->data_sel[OP_IMM]=1;
+            ins_data->op_rs1=(ins>>15) & 0x1F;
+            ins_data->data_sel[OP_RS1]=1;
+            ins_data->op_rd=(ins>>7) & 0x1F;
+            ins_data->data_sel[OP_RD]=1;
+            res=1;
+        }
+        
     }
     else if (op_type==B_TYPE)
     {
@@ -247,7 +449,16 @@ unsigned char GetInsData(WORD ins,BYTE op_type,BYTE op1,BYTE op2,s_ins_data* ins
     }
     else if (op_type==S_TYPE)
     {
-        /* code */
+        int imm;
+        imm = (ins>>7) & 0x0000001F;
+        imm |= (ins>>20) & 0x00000FE0;
+        ins_data->op_imm=imm;
+        ins_data->data_sel[OP_IMM]=1;
+        ins_data->op_rs1=(ins>>15) & 0x1F;
+        ins_data->data_sel[OP_RS1]=1;
+        ins_data->op_rs2=(ins>>20) & 0x1F;
+        ins_data->data_sel[OP_RS2]=1;
+        res=1;
     }
     else if (op_type==R_TYPE)
     {
@@ -310,7 +521,6 @@ void FetchModule()
         deliver12_bk.ins_valid = 0;
         return;
     }
-    
     unsigned char op_type = GetInsType(op1);
     if(op_type==0 || op_type==7)
     {
@@ -328,7 +538,7 @@ void FetchModule()
             break;
 
         case I_TYPE:
-            /* code */
+            ins_valid=ItypeDecode(op1,op2,op3,&op_code,&issue_sta);
             break;
 
         case B_TYPE:
@@ -336,7 +546,7 @@ void FetchModule()
             break;
 
         case S_TYPE:
-            /* code */
+            ins_valid=StypeDecode(op1,op2,op3,&op_code,&issue_sta);
             break;
 
         case R_TYPE:
@@ -369,3 +579,4 @@ void FetchModule()
     deliver12_bk.ins_valid=ins_valid;
     pc_bk1=ins_pred;
 }
+                                                      

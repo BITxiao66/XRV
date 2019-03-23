@@ -53,6 +53,9 @@
 # define ALU_LUI 9
 # define ALU_AUI 10
 # define ALU_SLT 11
+# define ALU_SLTU 12
+# define ALU_LUI  15
+# define ALU_AUI  16
 
 # define JU_JAL     1
 # define JU_JALR    2
@@ -62,6 +65,16 @@
 # define JU_BGE     6
 # define JU_BLTU    7
 # define JU_BGEU    8
+
+# define LU_LB      1
+# define LU_LH      2
+# define LU_LW      3
+# define LU_LBU     4
+# define LU_LHU     5
+
+# define SU_SB      1
+# define SU_SH      2
+# define SU_SW      3
 
 typedef unsigned char   BIT0;   // just use the first bit
 typedef unsigned char   BIT1;

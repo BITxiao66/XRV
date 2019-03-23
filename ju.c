@@ -19,6 +19,7 @@ void JUModule()
 {
     BYTE jump_if=0;
     int jump_addr=-1;
+    WORD tmp1,tmp2;
     memset(&ju_out_bk,0,sizeof(ju_out));
     if (!station[JU].valid) 
     {
@@ -34,12 +35,36 @@ void JUModule()
                 break;
 
             case JU_BEQ:
-                jump_if=(station[JU].Vi==station[JU].Vj)?1:0;
+                jump_if=(station[JU].Vi == station[JU].Vj)?1:0;
                 jump_addr=jump_if?station[JU].ins_addr+station[JU].imm:station[JU].ins_addr+4;
                 break;
 
             case JU_BNE:
-                jump_if=(station[JU].Vi!=station[JU].Vj)?1:0;
+                jump_if=(station[JU].Vi != station[JU].Vj)?1:0;
+                jump_addr=jump_if?station[JU].ins_addr+station[JU].imm:station[JU].ins_addr+4;
+                break;
+
+            case JU_BLT:
+                jump_if=(station[JU].Vi < station[JU].Vj)?1:0;
+                jump_addr=jump_if?station[JU].ins_addr+station[JU].imm:station[JU].ins_addr+4;
+                break;
+
+            case JU_BGE:
+                jump_if=(station[JU].Vi >= station[JU].Vj)?1:0;
+                jump_addr=jump_if?station[JU].ins_addr+station[JU].imm:station[JU].ins_addr+4;
+                break;
+            
+            case JU_BLTU:
+                tmp1=station[JU].Vi;
+                tmp2=station[JU].Vj;
+                jump_if=(tmp1 < tmp2)?1:0;
+                jump_addr=jump_if?station[JU].ins_addr+station[JU].imm:station[JU].ins_addr+4;
+                break;
+
+            case JU_BGEU:
+                tmp1=station[JU].Vi;
+                tmp2=station[JU].Vj;
+                jump_if=(tmp1 >= tmp2)?1:0;
                 jump_addr=jump_if?station[JU].ins_addr+station[JU].imm:station[JU].ins_addr+4;
                 break;
 
@@ -60,7 +85,7 @@ void JUModule()
             }
         }
     }
-    else if (station[JU].Qi<8) // snoop Vi from commit bus
+    if (station[JU].Qi<8) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[JU].Qi) 
         {
@@ -68,7 +93,7 @@ void JUModule()
             station_bk[JU].Vi=cmt_bus.res;
         }  
     }
-    else if (station[JU].Qj<8)
+    if (station[JU].Qj<8)
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[JU].Qj) 
         {

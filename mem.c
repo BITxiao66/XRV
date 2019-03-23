@@ -13,6 +13,7 @@
 
 #include "define.h"
 #include "reg_bus.h"
+#include "lsu.h"
 #include <stdio.h>
 #include <stdlib.h>
 static unsigned char mem_arry[MEM_SIZE/CACHE_LINE][CACHE_LINE];
@@ -155,6 +156,24 @@ char* ReadMemLine(int addr)
         read_port_data[p]=mem_arry[addr/CACHE_LINE][p];
     }
     return read_port_data;
+}
+
+int ReadMemWord(int addr)
+{
+    DcacheRead(addr);
+    if (dcache_res.hit) 
+    {
+        return dcache_res.data;
+    }
+    
+    int a=0;
+    int i;
+    for( i = 3; i >=0 ; i--)
+    {
+        a<<=8;
+        a|=(mem_arry[addr/CACHE_LINE][addr%CACHE_LINE+i]) & 0x000000FF;
+    }
+    return a;
 }
 
 void WriteMemLine(int addr,char* src)

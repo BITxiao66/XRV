@@ -25,7 +25,7 @@
 void CleanQueue()
 {
     ResetQueue();
-    memset(station,0,4*sizeof(s_station_in));
+    memset(station,0,5*sizeof(s_station_in));
     cmt_vie=cmt_vie_bk=0;
     memset(&deliver12,0,sizeof(deliver12));
     memset(&deliver12_bk,0,sizeof(deliver12));
@@ -52,7 +52,7 @@ void UpdatePredPath(BYTE jump_if,int addr)
 void WriteBack()
 {
     s_queue_item head = queue[queue_head];
-    if (head.item_status!=FINISH) 
+    if (head.item_status!=FINISH && head.issue_sta!=SU) 
     {
         return;
     }
@@ -87,6 +87,48 @@ void WriteBack()
         {
             WriteReg(head.Rd,head.imm);
         }
+        queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE;
+    }
+    else if (head.issue_sta==SU)
+    {
+        int issue = 1;
+        int clean = 0;
+        int su_addr=ReadReg(head.Qi)+head.imm ;
+        int i;
+        int j;
+        if (station[SU].valid) 
+        {
+            issue=0;
+        }
+        for( i = (queue_head+1)%QUEUE_SIZE; i!=queue_tail ;i=(i+1)%QUEUE_SIZE)
+        {
+            if (queue[i].issue_sta==LU && queue[i].item_status==ISSUED && queue[i].exe_addr==-1) 
+            {
+                issue=0;
+                break;
+            }
+            if (queue[i].issue_sta==LU && su_addr==queue[i].exe_addr)
+            {
+                clean=1;
+                break;
+            }
+        }
+        if (issue) 
+        {
+            queue_bk[queue_head].item_status=ITEM_FREE;
+            queue_head_bk=(queue_head+1)%QUEUE_SIZE;
+            station_bk[SU].Vi=ReadReg(head.Qi);
+            station_bk[SU].Vj=ReadReg(head.Qj);
+            station_bk[SU].imm=head.imm;
+            station_bk[SU].op=head.op_code;
+            station_bk[SU].valid=1;
+        }
+        if (clean && issue) 
+        {
+            need_clean_queue=1;
+            pc_bk5=head.ins_addr+4;
+            pc5_enble=1;
+        }
     }
 }

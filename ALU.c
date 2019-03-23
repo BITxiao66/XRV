@@ -19,6 +19,7 @@ void ALUModule()
 {
     int res;
     int bus_user;
+    WORD tmp1,tmp2;
     memset(&alu_out_bk,0,sizeof(alu_out));
     if (!station[ALU].valid) 
     {
@@ -29,11 +30,55 @@ void ALUModule()
         switch (station[ALU].op)
         {
             case ALU_ADD:
-                res = station[ALU].Vi+station[ALU].Vj;
+                res = station[ALU].Vi + station[ALU].Vj;
                 break;
+
             case ALU_SUB:
-                res = station[ALU].Vi-station[ALU].Vj;
+                res = station[ALU].Vi - station[ALU].Vj;
                 break;
+
+            case ALU_SLL:
+                res = station[ALU].Vi << (station[ALU].Vj%32);
+                break;
+            
+            case ALU_SLT:
+                res = (station[ALU].Vi < station[ALU].Vj)?1:0;
+                break;
+
+            case ALU_SLTU:
+                tmp1=station[ALU].Vi;
+                tmp2=station[ALU].Vj;
+                res = (tmp1 < tmp2)?1:0;
+                break;
+
+            case ALU_XOR:
+                res = station[ALU].Vi ^ station[ALU].Vj;
+                break;
+
+            case ALU_SRL:
+                tmp1=station[ALU].Vi;
+                tmp2=station[ALU].Vj;
+                res= tmp1 >> (tmp2%32);
+                break;
+
+            case ALU_SRA:
+                res = station[ALU].Vi>>(station[ALU].Vj%32);
+                break;
+            
+            case ALU_OR:
+                res = station[ALU].Vi | station[ALU].Vj;
+                break;
+            
+            case ALU_AND:
+                res = station[ALU].Vi & station[ALU].Vj;
+                break;
+            
+            case ALU_AUI:
+                res = station[ALU].ins_addr+station[ALU].Vj ;
+
+            case ALU_LUI:
+                res = station[ALU].Vj;
+
             default:
                 break;
         }
@@ -49,7 +94,7 @@ void ALUModule()
             }
         }
     }
-    else if (station[ALU].Qi<8) // snoop Vi from commit bus
+    if (station[ALU].Qi<8) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[ALU].Qi) 
         {
@@ -57,7 +102,7 @@ void ALUModule()
             station_bk[ALU].Vi=cmt_bus.res;
         }  
     }
-    else if (station[ALU].Qj<8)
+    if (station[ALU].Qj<8)
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[ALU].Qj) 
         {

@@ -16,18 +16,30 @@
 #include "queue.h"
 #include "issue.h"
 #include "cmt.h"
+#include "lsu.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 void CycleBegin()
 {
     mem_read1_ready_bk = mem_read1_ready;
+    mem_read2_ready_bk = mem_read2_ready;
+    mem_write2_ready_bk=mem_write2_ready;
     icache_write_busy_bk=icache_write_busy;
+    pc_bk1=pc;
     if (icache_need_refresh) 
     {
         memcpy(icache_bak,icache,sizeof(icache));
         memcpy(icache_tag_bk,icache_tag,sizeof(icache_tag));
         icache_need_refresh = 0;
     }
+    if (dcache_need_refresh) 
+    {
+        memcpy(dcache_bak,dcache,sizeof(dcache));
+        memcpy(dcache_tag,dcache_tag_bk,sizeof(dcache_tag));
+        dcache_need_refresh=0;
+    }
+    
     if (pred_need_fresh) 
     {
         memcpy(pred_bk,pred,sizeof(pred));
@@ -38,17 +50,26 @@ void CycleBegin()
     queue_tail_bk=queue_tail;
     memcpy(reg_bk,reg,sizeof(reg));
     memcpy(station_bk,station,sizeof(station));
+    dcache_busy_bk=dcache_busy;
 }
 
 void CycleEnd()
 {
     mem_read1_ready = mem_read1_ready_bk;
+    mem_read2_ready = mem_read2_ready_bk;
+    mem_write2_ready=mem_write2_ready_bk;
     icache_write_busy = icache_write_busy_bk;
     if (icache_need_refresh) 
     {
         memcpy(icache,icache_bak,sizeof(icache));
         memcpy(icache_tag,icache_tag_bk,sizeof(icache_tag));
     }
+    if (dcache_need_refresh) 
+    {
+        memcpy(dcache,dcache_bak,sizeof(dcache));
+        memcpy(dcache_tag,dcache_tag_bk,sizeof(dcache_tag));
+    }
+    
     if (pred_need_fresh) 
     {
         memcpy(pred,pred_bk,sizeof(pred));
@@ -59,12 +80,14 @@ void CycleEnd()
     queue_head=queue_head_bk;
     queue_tail=queue_tail_bk;
     queue_full=(queue_head==((queue_tail+1)%QUEUE_SIZE)&&queue[queue_head].item_status)?1:0;
+    queue_full|=(queue_head==queue_tail&&queue[queue_head].item_status)?1:0;
     memcpy(reg,reg_bk,sizeof(reg));
     reg[0]=0;
     memset(issue_write,0,sizeof(issue_write));
     memcpy(station,station_bk,sizeof(station));
     memcpy(&alu_out,&alu_out_bk,sizeof(alu_out));
     memcpy(&ju_out,&ju_out_bk,sizeof(ju_out));
+    dcache_busy=dcache_busy_bk;
     CmtBusUpdate();
     if (need_clean_queue) 
     {
@@ -74,8 +97,16 @@ void CycleEnd()
     pc=pc5_enble?pc_bk5:pc_bk1;
     pc5_enble=0;
 }
-
-
+void OutFile() // temporary function for debug
+{
+    int i;
+    FILE* fout=fopen("./out.txt","w");
+    for( i = 0; i < 10000; i++)
+    {
+        fprintf(fout,"%d\n",ReadMemWord(1024+4*i));
+    }
+    fclose(fout);
+}
 int main()
 { 
     ResetDecodeTable();
@@ -83,21 +114,24 @@ int main()
     pc5_enble=0;
     MemReset();
     LoadMemFromFile("in.txt",1,0);
-    reg[1]=1;
-    reg[5]=1;
-    reg[6]=10;
-    while(1)
+    int i;
+    i=5000000;
+    while(i--)
     {
         CycleBegin();
         MemUpdateStatus();
-        FetchModule();
+        FetchModule(); 
         QueueModule();
         Issue();
-        JUModule();
+        SUModule();
+        LUModule();
         ALUModule();
+        JUModule();
         Commit();
         WriteBack();
         CycleEnd();
     }
+    CleanQueue();
+    OutFile();
     return 0;
 }

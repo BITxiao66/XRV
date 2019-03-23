@@ -41,11 +41,18 @@ void QueueModule()
     }
     else if(deliver12.issue_sta==LU)
     {
-        
+        queue_bk[queue_tail].Qi=deliver12.op_rs1;
+        queue_bk[queue_tail].Qj=40;
+        queue_bk[queue_tail].Rd=deliver12.op_rd;
+        queue_bk[queue_tail].imm=deliver12.op_imm;
+        queue_bk[queue_tail].exe_addr= -1;
     }
     else if (deliver12.issue_sta==SU) 
     {
-        
+        queue_bk[queue_tail].Qi=deliver12.op_rs1;
+        queue_bk[queue_tail].Qj=deliver12.op_rs2;
+        queue_bk[queue_tail].Rd=40;
+        queue_bk[queue_tail].imm=deliver12.op_imm;
     }
     else if (deliver12.issue_sta==JU) 
     {
