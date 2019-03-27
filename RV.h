@@ -12,4 +12,6 @@ int mem_read1_ready,mem_read1_ready_bk;
 int mem_read2_ready,mem_read2_ready_bk;
 int mem_write1_ready,mem_write1_ready_bk;
 int mem_write2_ready,mem_write2_ready_bk;
+
+char tem[5000];
 #endif

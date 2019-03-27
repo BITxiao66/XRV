@@ -27,6 +27,20 @@ void CmtBusUpdate()
             cmt_bus.res=alu_out.res;
             cmt_bus.user=ALU;
             break;
+        
+        case MUL_UNIT:
+            cmt_bus.valid=mul_out.valid;
+            cmt_bus.id=mul_out.id;
+            cmt_bus.res=mul_out.res;
+            cmt_bus.user=MUL_UNIT;
+            break;
+        
+        case CSU:
+            cmt_bus.valid=csu_out.valid;
+            cmt_bus.id=csu_out.id;
+            cmt_bus.res=csu_out.res;
+            cmt_bus.user=CSU;
+            break;
 
         case JU:
             cmt_bus.valid=ju_out.valid;
@@ -68,7 +82,7 @@ void Commit()
         queue_bk[p].exe_addr=cmt_bus.addr;
         return;
     }
-    if (user==ALU||user==MUL_UNIT) 
+    if (user==ALU||user==MUL_UNIT||user==CSU) 
     {
         queue_bk[p].imm=cmt_bus.res;
         queue_bk[p].item_status=FINISH;

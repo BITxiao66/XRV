@@ -111,6 +111,7 @@ void ResetDecodeTable()
     type_table[I_TYPE][0] = 0b01100111;
     type_table[I_TYPE][1] = 0b00000011;
     type_table[I_TYPE][2] = 0b00010011;
+    type_table[I_TYPE][3] = 0b01110011;
     type_table[B_TYPE][0] = 0b01100011;
     type_table[S_TYPE][0] = 0b00100011;
     type_table[R_TYPE][0] = 0b00110011;
@@ -138,8 +139,35 @@ unsigned char GetInsType(BYTE op1)
 
 unsigned char RtypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsigned char*issue_sta)
 {
+    // for MUL
     BYTE res=0;
-    if(op1==0b00110011)
+    if (op3==1) 
+    {
+        *issue_sta=MUL_UNIT;
+        switch (op2)
+        {
+            case 0:
+                *op_code=MUL_MUL;
+                res=1;
+                break;
+        
+            case 4:
+                *op_code=MUL_DIV;
+                res=1;
+                break;
+
+            case 6:
+                *op_code=MUL_REM;
+                res=1;
+                break;
+
+            default:
+                break;
+        }
+        return res;
+    }
+    // for ALU
+    if(op1==0b00110011&&op3!=1)
         *issue_sta=ALU;
     if (op2==0 && op3==0) 
     {
@@ -331,7 +359,35 @@ unsigned char ItypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsi
         }
         *issue_sta=ALU;
     }
-    
+    else if (op1==0b01110011)
+    {
+        *issue_sta=CSU;
+        if (op2==0) 
+        {
+            *op_code=0;
+            res=1;
+        }
+        else if (op2==1) 
+        {
+            *op_code=CSU_CSRRW;
+            res=1;
+        }
+        else if (op2==2) 
+        {
+            *op_code=CSU_CSRRS;
+            res=1;
+        }
+        else if (op2==3) 
+        {
+            *op_code=CSU_CSRRC;
+            res=1;
+        }
+        else
+        {
+            printf("CSR break\n");
+            exit(1);
+        }
+    }
     return res;
 }
 
@@ -452,6 +508,8 @@ unsigned char GetInsData(WORD ins,BYTE op_type,BYTE op1,BYTE op2,s_ins_data* ins
         int imm;
         imm = (ins>>7) & 0x0000001F;
         imm |= (ins>>20) & 0x00000FE0;
+        imm <<=20;
+        imm >>=20;
         ins_data->op_imm=imm;
         ins_data->data_sel[OP_IMM]=1;
         ins_data->op_rs1=(ins>>15) & 0x1F;
@@ -530,7 +588,7 @@ void FetchModule()
     switch (op_type)
     {
         case U_TYPE:
-            /* code */
+            ins_valid=UtypeDEcode(op1,op2,op3,&op_code,&issue_sta);
             break;
 
         case J_TYPE:
@@ -558,6 +616,7 @@ void FetchModule()
     }
     if (!ins_valid) 
     {
+        printf("Invalid instruction %X:\n",ins);
         deliver12_bk.ins_valid = 0;
         return;
     }

@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+extern long long mcycle;
+
 void CycleBegin()
 {
     mem_read1_ready_bk = mem_read1_ready;
@@ -86,6 +88,8 @@ void CycleEnd()
     memset(issue_write,0,sizeof(issue_write));
     memcpy(station,station_bk,sizeof(station));
     memcpy(&alu_out,&alu_out_bk,sizeof(alu_out));
+    memcpy(&mul_out,&mul_out_bk,sizeof(mul_out));
+    memcpy(&csu_out,&csu_out_bk,sizeof(csu_out));
     memcpy(&ju_out,&ju_out_bk,sizeof(ju_out));
     dcache_busy=dcache_busy_bk;
     CmtBusUpdate();
@@ -96,6 +100,7 @@ void CycleEnd()
     }
     pc=pc5_enble?pc_bk5:pc_bk1;
     pc5_enble=0;
+    mcycle++;
 }
 void OutFile() // temporary function for debug
 {
@@ -113,9 +118,11 @@ int main()
     ResetQueue();
     pc5_enble=0;
     MemReset();
+    //LoadMemFromHex("../Documents/dhry.hex");
     LoadMemFromFile("in.txt",1,0);
     int i;
-    i=5000000;
+    i=500000;
+    //pc=64*1024;    
     while(i--)
     {
         CycleBegin();
@@ -126,11 +133,13 @@ int main()
         SUModule();
         LUModule();
         ALUModule();
+        MULModule();
+        CSUModule();
         JUModule();
         Commit();
         WriteBack();
         CycleEnd();
-    }
+    }    
     CleanQueue();
     OutFile();
     return 0;

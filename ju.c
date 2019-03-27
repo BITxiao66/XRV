@@ -67,6 +67,11 @@ void JUModule()
                 jump_if=(tmp1 >= tmp2)?1:0;
                 jump_addr=jump_if?station[JU].ins_addr+station[JU].imm:station[JU].ins_addr+4;
                 break;
+            
+            case JU_JALR:
+                jump_if=1;
+                jump_addr=station[JU].Vi+station[JU].imm;// mul 2 at fetch phase
+                break;
 
             default:
                 break;

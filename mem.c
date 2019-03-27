@@ -73,7 +73,36 @@ int LoadMemFromFile(char* file_name,int little_endian,unsigned int begin_addr)
             for(i=6;i>=0;i-=2,p++)
                 mem_arry[p/CACHE_LINE][p%CACHE_LINE]=GetHexValue(str[i],str[i+1]);        
     }
+    fclose(file);
     return 1;
+}
+
+void LoadMemFromHex(char* file_name)
+{
+    FILE* file = fopen(file_name,"r");
+    if(!file)
+    {
+        printf("Load file can not open\n");
+        return 0;
+    }
+    char str[100];
+    int p = 0;
+    int i;
+    while(fscanf(file,"%s",str)!=EOF)
+    {
+        if(str[0]=='@')
+        {
+            p = atoi(str+1);
+            if(p%4)
+            {
+                printf("Invalid jump addr in file\n");
+                return 0;
+            }
+            continue;
+        }
+        mem_arry[p/CACHE_LINE][p%CACHE_LINE]=GetHexValue(str[i],str[i+1]); 
+        p++;     
+    }
 }
 
 void MemReset()
@@ -190,7 +219,7 @@ void WriteMemByte(int addr,int src)
     int p;
     for( p = 0; p < 1; p++)
     {
-        mem_arry[addr/CACHE_LINE][p] = (src>>(8*p))&0xFF;
+        mem_arry[addr/CACHE_LINE][addr%CACHE_LINE+p] = (src>>(8*p))&0xFF;
     }
 }
 
@@ -199,7 +228,7 @@ void WriteMemHalfword(int addr,int src)
     int p;
     for( p = 0; p < 2; p++)
     {
-        mem_arry[addr/CACHE_LINE][p] = (src>>(8*p))&0xFF;
+        mem_arry[addr/CACHE_LINE][addr%CACHE_LINE+p] = (src>>(8*p))&0xFF;
     }
 }
 
@@ -208,6 +237,6 @@ void WriteMemWord(int addr,int src)
     int p;
     for( p = 0; p < 4; p++)
     {
-        mem_arry[addr/CACHE_LINE][p] = (src>>(8*p))&0xFF;
+        mem_arry[addr/CACHE_LINE][addr%CACHE_LINE+p] = (src>>(8*p))&0xFF;
     }
 }

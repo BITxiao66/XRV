@@ -268,6 +268,14 @@ void SUModule()
         default:
             break;
     }
+    if (station[SU].Vi+station[SU].imm==0x10000000) 
+    {
+        printf("%c",station[SU].Vj);
+        sprintf(tem,"%c",station[SU].Vj);
+        station_bk[SU].valid=0;
+        return;
+    }
+    
     if (DcacheWrite(station[SU].Vi+station[SU].imm,station[SU].Vj,leng)) 
     {
         station_bk[SU].valid=0;
@@ -286,12 +294,12 @@ void LUModule()
     {
         return;
     }
-    if (station[LU].Qj<8)   // snoop Vj from commit bus
+    if (station[LU].Qi<8)   // snoop Vj from commit bus
     {
-        if (cmt_bus.valid==1 && cmt_bus.id==station[LU].Qj) 
+        if (cmt_bus.valid==1 && cmt_bus.id==station[LU].Qi) 
         {
-            station_bk[LU].Qj=8;
-            station_bk[LU].Vj=cmt_bus.res;
+            station_bk[LU].Qi=8;
+            station_bk[LU].Vi=cmt_bus.res;
         }  
     }
     else

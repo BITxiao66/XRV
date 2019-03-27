@@ -22,10 +22,13 @@
 #include "RV.h"
 #include "cmt.h"
 
+extern long long minstret;
+
 void CleanQueue()
 {
     ResetQueue();
     memset(station,0,5*sizeof(s_station_in));
+    memset(&station[CSU],0,sizeof(s_station_in));
     cmt_vie=cmt_vie_bk=0;
     memset(&deliver12,0,sizeof(deliver12));
     memset(&deliver12_bk,0,sizeof(deliver12));
@@ -61,12 +64,34 @@ void WriteBack()
         WriteReg(head.Rd,head.imm);
         queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE;
+        minstret++;
+    }
+    else if (head.issue_sta==MUL_UNIT) 
+    {
+        WriteReg(head.Rd,head.imm);
+        queue_bk[queue_head].item_status=ITEM_FREE;
+        queue_head_bk=(queue_head+1)%QUEUE_SIZE;
+        minstret++;
+    }
+    else if (head.issue_sta==CSU) 
+    {
+        WriteReg(head.Rd,head.imm);
+        queue_bk[queue_head].item_status=ITEM_FREE;
+        queue_head_bk=(queue_head+1)%QUEUE_SIZE;
+        minstret++;
+        if (head.imm==0xFFFFFFFF) 
+        {
+            printf("RV ebreak\n");
+            exit(1);
+        }
+        
     }
     else if (head.issue_sta==LU) 
     {
         WriteReg(head.Rd,head.imm);
         queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE; 
+        minstret++;
     }
     else if (head.issue_sta==JU)
     {
@@ -89,6 +114,7 @@ void WriteBack()
         }
         queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE;
+        minstret++;
     }
     else if (head.issue_sta==SU)
     {
@@ -123,6 +149,7 @@ void WriteBack()
             station_bk[SU].imm=head.imm;
             station_bk[SU].op=head.op_code;
             station_bk[SU].valid=1;
+            minstret++;
         }
         if (clean && issue) 
         {

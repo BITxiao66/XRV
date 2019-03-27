@@ -31,6 +31,7 @@
 # define JU       3
 # define LU       4
 # define SU       5
+# define CSU      6
 
 # define ITEM_FREE 0
 # define UNISSUED  1
@@ -57,6 +58,15 @@
 # define ALU_LUI  15
 # define ALU_AUI  16
 
+# define MUL_MUL    1
+# define MUL_MULH   2
+# define MUL_MULHSU 3
+# define MUL_DIV    4
+# define MUL_DIVU   5
+# define MUL_REM    6
+# define MUL_REMU   7
+# define MUL_MULHU  8
+
 # define JU_JAL     1
 # define JU_JALR    2
 # define JU_BEQ     3
@@ -75,6 +85,10 @@
 # define SU_SB      1
 # define SU_SH      2
 # define SU_SW      3
+
+# define CSU_CSRRW  1
+# define CSU_CSRRS  2
+# define CSU_CSRRC  3
 
 typedef unsigned char   BIT0;   // just use the first bit
 typedef unsigned char   BIT1;
