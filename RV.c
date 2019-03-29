@@ -38,7 +38,7 @@ void CycleBegin()
     if (dcache_need_refresh) 
     {
         memcpy(dcache_bak,dcache,sizeof(dcache));
-        memcpy(dcache_tag,dcache_tag_bk,sizeof(dcache_tag));
+        memcpy(dcache_tag_bk,dcache_tag,sizeof(dcache_tag));
         dcache_need_refresh=0;
     }
     
@@ -102,6 +102,7 @@ void CycleEnd()
     pc5_enble=0;
     mcycle++;
 }
+
 void OutFile() // temporary function for debug
 {
     int i;
@@ -118,11 +119,11 @@ int main()
     ResetQueue();
     pc5_enble=0;
     MemReset();
-    //LoadMemFromHex("../Documents/dhry.hex");
-    LoadMemFromFile("in.txt",1,0);
+    LoadMemFromHex("../Documents/dhry.hex");
+    //LoadMemFromFile("in.txt",1,0);
     int i;
-    i=500000;
-    //pc=64*1024;    
+    i=5000000;
+    pc=64*1024;    
     while(i--)
     {
         CycleBegin();
@@ -141,6 +142,5 @@ int main()
         CycleEnd();
     }    
     CleanQueue();
-    OutFile();
     return 0;
 }

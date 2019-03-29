@@ -14,6 +14,7 @@
 #include "RV.h"
 #include "issue.h"
 #include "cmt.h"
+#include <string.h>
 
 extern char read_port_data[CACHE_LINE];
 
@@ -29,7 +30,7 @@ int DcacheWrite(WORD addr, int data ,int leng)
     }
     for( i = 0; i < 4; i++)
     {
-        if (((dcache_tag[group][i] & 0xFFFFFFE0) == (addr&0xFFFFFFE0))&&((dcache_tag[group][i]&0x0000001F))) 
+        if (((dcache_tag[group][i] & 0xFFFFFFE0) == (addr&0xFFFFFFE0))&&((dcache_tag[group][i]&0x00000003))) 
         {
             line = i;
             break;
@@ -39,9 +40,9 @@ int DcacheWrite(WORD addr, int data ,int leng)
     if(hit)
     {
         complete = 1;
-        for( i = 0; i < leng; i++)
+        for( i = 0; i < leng && i<4; i++)
         {
-            dcache_bak[group][line][(addr+i)%CACHE_LINE]=(data>>(8*i))&0xFF;
+            dcache_bak[group][line][(addr+i)%CACHE_LINE]=(data>>(8*i))&0x000000FF;
         }
         dcache_tag_bk[group][line]&= 0xFFFFFFE0;
         dcache_tag_bk[group][line]|= 0x00000002;
@@ -62,7 +63,7 @@ int DcacheSwapWrite(WORD addr,int data,int leng)
     {
         return 0;
     }
-    if (dcache_busy) 
+    if (dcache_busy&&dcache_user==SU) 
     {
         if (!mem_write2_ready) 
         {
@@ -115,7 +116,7 @@ s_dcache_res DcacheRead(WORD addr)
     }
     for( i = 0; i < 4; i++)
     {
-        if (((dcache_tag[group][i] & 0xFFFFFFE0) == (addr&0xFFFFFFE0))&&((dcache_tag[group][i]&0x0000001F))) 
+        if (((dcache_tag[group][i] & 0xFFFFFFE0) == (addr&0xFFFFFFE0)) && ((dcache_tag[group][i]&0x00000003)>0)) 
         {
             line = i;
             break;
@@ -196,7 +197,8 @@ void DcacheSwapRead(int addr)
     {
         return;
     }
-    if (dcache_busy) 
+    
+    if (dcache_busy&&dcache_user==LU) 
     {
         if (!mem_write2_ready) 
         {
@@ -250,7 +252,7 @@ void SUModule()
     {
         return;
     }
-    int leng;
+    int leng=4;
     switch (station[SU].op)
     {
         case SU_SB:
@@ -271,7 +273,7 @@ void SUModule()
     if (station[SU].Vi+station[SU].imm==0x10000000) 
     {
         printf("%c",station[SU].Vj);
-        sprintf(tem,"%c",station[SU].Vj);
+        tem[strlen(tem)]=station[SU].Vj;
         station_bk[SU].valid=0;
         return;
     }
@@ -307,7 +309,7 @@ void LUModule()
         int addr=station[LU].Vi+station[LU].imm;
         if (dcache_need_refresh) 
         {
-             DcacheRead_bk(addr);
+            DcacheRead_bk(addr);
         }
         else
         {

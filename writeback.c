@@ -23,7 +23,8 @@
 #include "cmt.h"
 
 extern long long minstret;
-
+long long branch_count=0;
+long long branch_right=0;
 void CleanQueue()
 {
     ResetQueue();
@@ -81,6 +82,7 @@ void WriteBack()
         minstret++;
         if (head.imm==0xFFFFFFFF) 
         {
+            //printf("%s",tem);
             printf("RV ebreak\n");
             exit(1);
         }
@@ -96,6 +98,7 @@ void WriteBack()
     else if (head.issue_sta==JU)
     {
         UpdatePredPath(head.exe_jump,head.ins_addr);
+        branch_count++;
         if (head.exe_jump) 
         {
             pred_need_fresh=1;
@@ -108,6 +111,11 @@ void WriteBack()
             pc_bk5=head.exe_addr;
             pc5_enble=1;
         }
+        else
+        {
+            branch_right++;
+        }
+        
         if (head.Rd<32) 
         {
             WriteReg(head.Rd,head.imm);
