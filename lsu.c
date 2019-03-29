@@ -18,7 +18,7 @@
 
 extern char read_port_data[CACHE_LINE];
 
-int DcacheWrite(WORD addr, int data ,int leng)
+/*int DcacheWrite(WORD addr, int data ,int leng)
 {
     int group = (addr/CACHE_LINE)%32;
     int line = 0;
@@ -55,9 +55,9 @@ int DcacheWrite(WORD addr, int data ,int leng)
         //DcacheSwapWrite(addr,data,leng);
         return 0;
     } 
-}
+}*/
 
-int DcacheSwapWrite(WORD addr,int data,int leng)
+/*int DcacheSwapWrite(WORD addr,int data,int leng)
 {
     if (dcache_user!=SU && dcache_user!=DCACHE_FREE) 
     {
@@ -101,6 +101,102 @@ int DcacheSwapWrite(WORD addr,int data,int leng)
         return 0;
     }
     return 0;
+}*/
+
+int DcacheWrite(WORD addr, int data ,int leng)
+{
+    int group = (addr/CACHE_LINE)%32;
+    int line = 0;
+    int i = 0;
+    int complete =0;
+    if(dcache_busy)
+    {
+        return complete;
+    }
+    for( i = 0; i < 4; i++)
+    {
+        if (((dcache_tag[group][i] & 0xFFFFFFE0) == (addr&0xFFFFFFE0))&&((dcache_tag[group][i]&0x00000003))) 
+        {
+            line = i;
+            break;
+        }     
+    }
+    int hit = i<4?1:0;
+    if(hit)
+    {
+        complete = 1;
+        for( i = 0; i < leng && i<4; i++)
+        {
+            dcache_bak[group][line][(addr+i)%CACHE_LINE]=(data>>(8*i))&0x000000FF;
+        }
+        dcache_tag_bk[group][line]&= 0xFFFFFFE0;
+        dcache_tag_bk[group][line]|= 0x00000002;
+        d_lru[group] = line;
+        dcache_need_refresh = 1;
+        return 1;
+    }
+    else
+    {
+        DcacheSwapWrite(addr,data,leng);
+        return 0;
+    } 
+}
+
+void DcacheSwapWrite(WORD addr,int data,int leng)
+{
+    static int line=0;
+    static int flag=0;
+    static int store_addr=0;
+    if (dcache_user!=SU && dcache_user!=DCACHE_FREE) 
+    {
+        return ;
+    }
+    if (dcache_busy&&dcache_user==SU) 
+    {
+        if (!mem_write2_ready) 
+        {
+            return;
+        }
+        else if (mem_write2_ready&&!flag)
+        {
+            flag=1;
+            WriteMemLine(store_addr,dcache[(store_addr/CACHE_LINE)%32][line]);
+            ApplyReadPort(2);
+        }
+        else if (mem_write2_ready&&!mem_read2_ready&&flag)
+        {
+            return;
+        }
+        else if (mem_write2_ready&&mem_read2_ready)
+        {
+            ReadMemLine(addr);
+            memcpy(dcache_bak[(addr/CACHE_LINE)%32][line],read_port_data,CACHE_LINE);
+            dcache_tag_bk[(addr/CACHE_LINE)%32][line]=(addr&0xFFFFFFE0)|0X00000001;
+            dcache_need_refresh = 1;
+            dcache_busy_bk = 0;
+            flag=0;
+            dcache_user=DCACHE_FREE;
+            return;
+        }
+    }
+    else if (dcache_user==DCACHE_FREE) 
+    {
+        line = (d_lru[(addr/CACHE_LINE)%32]+1)%4;
+        dcache_busy_bk =1;
+        dcache_user=SU;
+        if ((dcache_tag[(addr/CACHE_LINE)%32][line]&0x00000003)==DIRTY) 
+        {
+            flag=0;
+            store_addr=dcache_tag[(addr/CACHE_LINE)%32][line]&0xFFFFFFE0;
+            ApplyWritePort(2);
+        }
+        else
+        {
+            ApplyReadPort(2);
+            flag=1;
+        }
+    }
+    return ;
 }
 
 s_dcache_res DcacheRead(WORD addr)
@@ -246,7 +342,7 @@ void DcacheSwapRead(int addr)
     }
 }
 
-void SUModule()
+/*void SUModule() // This version do not read cache line when miss
 {
     if (!station[SU].valid) 
     {
@@ -287,6 +383,51 @@ void SUModule()
     {
         station_bk[SU].valid=0;
         return;
+    }
+}*/
+void SUModule()
+{
+    if (!station[SU].valid) 
+    {
+        return;
+    }
+    int leng=4;
+    switch (station[SU].op)
+    {
+        case SU_SB:
+            leng=1;
+            break;
+    
+        case SU_SH:
+            leng=2;
+            break;
+        
+        case SU_SW:
+            leng=4;
+            break;
+
+        default:
+            break;
+    }
+    if (station[SU].Vi+station[SU].imm==0x10000000) 
+    {
+        printf("%c",station[SU].Vj);
+        tem[strlen(tem)]=station[SU].Vj;
+        station_bk[SU].valid=0;
+        return;
+    }
+    if (station[SU].Vi+station[SU].imm==81224) 
+    {
+        tem[strlen(tem)]=station[SU].Vj;
+    }
+    if (DcacheWrite(station[SU].Vi+station[SU].imm,station[SU].Vj,leng)) 
+    {
+        station_bk[SU].valid=0;
+        return;
+    }
+    if (dcache_busy) 
+    {
+        DcacheSwapWrite(station[SU].Vi+station[SU].imm,station[SU].Vj,leng);
     }
 }
 

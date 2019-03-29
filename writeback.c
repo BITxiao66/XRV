@@ -124,7 +124,7 @@ void WriteBack()
         queue_head_bk=(queue_head+1)%QUEUE_SIZE;
         minstret++;
     }
-    else if (head.issue_sta==SU)
+    else if (head.issue_sta==SU && head.item_status)
     {
         int issue = 1;
         int clean = 0;
