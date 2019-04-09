@@ -30,9 +30,14 @@ void CleanQueue()
     ResetQueue();
     memset(station,0,5*sizeof(s_station_in));
     memset(&station[CSU],0,sizeof(s_station_in));
+    memset(&station[ALU2],0,sizeof(s_station_in));
+    memset(&station[LU2],0,sizeof(s_station_in));
     cmt_vie=cmt_vie_bk=0;
-    memset(&deliver12,0,sizeof(deliver12));
-    memset(&deliver12_bk,0,sizeof(deliver12));
+    cmt_vie2=cmt_vie_bk2=0;
+    memset(&deliver1,0,sizeof(deliver1));
+    memset(&deliver1_bk,0,sizeof(deliver1));
+    memset(&deliver2,0,sizeof(deliver2));
+    memset(&deliver2_bk,0,sizeof(deliver2));
     ReleaseLUResource();
 }
 
@@ -56,6 +61,8 @@ void UpdatePredPath(BYTE jump_if,int addr)
 void WriteBack()
 {
     s_queue_item head = queue[queue_head];
+    s_queue_item next = queue[(queue_head+1)%QUEUE_SIZE];
+    int commit_2nd = 0;
     if (head.item_status!=FINISH && head.issue_sta!=SU) 
     {
         return;
@@ -66,6 +73,7 @@ void WriteBack()
         queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE;
         minstret++;
+        commit_2nd=1;
     }
     else if (head.issue_sta==MUL_UNIT) 
     {
@@ -73,6 +81,7 @@ void WriteBack()
         queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE;
         minstret++;
+        commit_2nd=1;
     }
     else if (head.issue_sta==CSU) 
     {
@@ -80,9 +89,10 @@ void WriteBack()
         queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE;
         minstret++;
+        commit_2nd=1;
         if (head.imm==0xFFFFFFFF) 
         {
-            //printf("%s",tem);
+            printf("%d",minstret);
             printf("RV ebreak\n");
             exit(1);
         }
@@ -94,6 +104,7 @@ void WriteBack()
         queue_bk[queue_head].item_status=ITEM_FREE;
         queue_head_bk=(queue_head+1)%QUEUE_SIZE; 
         minstret++;
+        commit_2nd=1;
     }
     else if (head.issue_sta==JU)
     {
@@ -165,5 +176,73 @@ void WriteBack()
             pc_bk5=head.ins_addr+4;
             pc5_enble=1;
         }
+    }
+    if ((!commit_2nd)||(next.item_status!=FINISH))
+    {
+        return;
+    }
+    if (next.issue_sta==ALU) 
+    {
+        WriteReg(next.Rd,next.imm);
+        queue_bk[(queue_head+1)%QUEUE_SIZE].item_status=ITEM_FREE;
+        queue_head_bk=(queue_head+2)%QUEUE_SIZE;
+        minstret++;
+    }
+    else if (next.issue_sta==MUL_UNIT) 
+    {
+        WriteReg(next.Rd,next.imm);
+        queue_bk[(queue_head+1)%QUEUE_SIZE].item_status=ITEM_FREE;
+        queue_head_bk=(queue_head+2)%QUEUE_SIZE;
+        minstret++;
+    }
+    else if (next.issue_sta==CSU) 
+    {
+        WriteReg(next.Rd,next.imm);
+        queue_bk[(queue_head+1)%QUEUE_SIZE].item_status=ITEM_FREE;
+        queue_head_bk=(queue_head+2)%QUEUE_SIZE;
+        minstret++;
+        if (head.imm==0xFFFFFFFF) 
+        {
+            //printf("%s",tem);
+            printf("RV ebreak\n");
+            exit(1);
+        }
+        
+    }
+    else if (next.issue_sta==LU) 
+    {
+        WriteReg(next.Rd,next.imm);
+        queue_bk[(queue_head+1)%QUEUE_SIZE].item_status=ITEM_FREE;
+        queue_head_bk=(queue_head+2)%QUEUE_SIZE; 
+        minstret++;
+    }
+    else if (next.issue_sta==JU)
+    {
+        UpdatePredPath(next.exe_jump,next.ins_addr);
+        branch_count++;
+        if (next.exe_jump) 
+        {
+            pred_need_fresh=1;
+            pred_bk[(next.ins_addr/4)%PRED_SIZE]&=0x00000003;
+            pred_bk[(next.ins_addr/4)%PRED_SIZE]|=(next.exe_addr & 0xFFFFFFFC);
+        }
+        if (next.exe_addr!=next.ins_pred) 
+        {
+            need_clean_queue=1;
+            pc_bk5=next.exe_addr;
+            pc5_enble=1;
+        }
+        else
+        {
+            branch_right++;
+        }
+        
+        if (head.Rd<32) 
+        {
+            WriteReg(next.Rd,next.imm);
+        }
+        queue_bk[(queue_head+1)%QUEUE_SIZE].item_status=ITEM_FREE;
+        queue_head_bk=(queue_head+2)%QUEUE_SIZE;
+        minstret++;
     }
 }

@@ -15,6 +15,11 @@ unsigned int dcache_tag_bk[32][4];
 int d_lru[32];
 
 s_dcache_res dcache_res;
+s_dcache_res tmp_res;
+s_dcache_res dcache_res2;
 s_load_out load_out;
+s_load_out load_out2;
+s_load_out load_out_bk;
+s_load_out load_out2_bk;
 
 # endif

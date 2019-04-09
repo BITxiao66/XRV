@@ -17,7 +17,7 @@ void CSUModule()
     {
         return;
     }
-    if (station[CSU].Qi>=8) 
+    if (station[CSU].Qi>=QUEUE_SIZE) 
     {
         switch (station[CSU].Vj & 0x00000FFF)
         {
@@ -45,13 +45,26 @@ void CSUModule()
                 memset(&station_bk[CSU],0,sizeof(station[CSU]));
             }
         }
+        else if (cmt_vie_bk2==0) 
+        {
+            cmt_vie_bk2=CSU;
+            if(issue_write[CSU]==0)
+            {
+                memset(&station_bk[CSU],0,sizeof(station[CSU]));
+            }
+        }
     }
-    if (station[CSU].Qi<8) // snoop Vi from commit bus
+    if (station[CSU].Qi<QUEUE_SIZE) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[CSU].Qi) 
         {
-            station_bk[CSU].Qi=8;
+            station_bk[CSU].Qi=QUEUE_SIZE;
             station_bk[CSU].Vi=cmt_bus.res;
+        }  
+        if (cmt_bus2.valid==1 && cmt_bus2.id==station[CSU].Qi) 
+        {
+            station_bk[CSU].Qi=QUEUE_SIZE;
+            station_bk[CSU].Vi=cmt_bus2.res;
         }  
     }
 }

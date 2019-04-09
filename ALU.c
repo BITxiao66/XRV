@@ -14,7 +14,7 @@
 # include "reg_bus.h"
 # include "issue.h"
 # include "cmt.h"
-
+# include "queue.h"
 void ALUModule()
 {
     int res;
@@ -25,7 +25,7 @@ void ALUModule()
     {
         return;
     }
-    if (station[ALU].Qi>=8&&station[ALU].Qj>=8) 
+    if (station[ALU].Qi>=QUEUE_SIZE&&station[ALU].Qj>=QUEUE_SIZE) 
     {
         switch (station[ALU].op)
         {
@@ -75,9 +75,11 @@ void ALUModule()
             
             case ALU_AUI:
                 res = station[ALU].ins_addr+station[ALU].Vj ;
+                break;
 
             case ALU_LUI:
                 res = station[ALU].Vj;
+                break;
 
             default:
                 break;
@@ -88,26 +90,149 @@ void ALUModule()
         if (cmt_vie_bk==0) 
         {
             cmt_vie_bk=ALU;
-            if(issue_write[ALU]==0)
-            {
-                memset(&station_bk[ALU],0,sizeof(station[ALU]));
-            }
+            memset(&station_bk[ALU],0,sizeof(station[ALU]));
         }
+        /*else if (cmt_vie_bk2==0) 
+        {
+            cmt_vie_bk2=ALU;
+            memset(&station_bk[ALU],0,sizeof(station[ALU]));
+        }*/
     }
-    if (station[ALU].Qi<8) // snoop Vi from commit bus
+    if (station[ALU].Qi<QUEUE_SIZE) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[ALU].Qi) 
         {
-            station_bk[ALU].Qi=8;
+            station_bk[ALU].Qi=QUEUE_SIZE;
             station_bk[ALU].Vi=cmt_bus.res;
-        }  
+        } 
+        if (cmt_bus2.valid==1 && cmt_bus2.id==station[ALU].Qi) 
+        {
+            station_bk[ALU].Qi=QUEUE_SIZE;
+            station_bk[ALU].Vi=cmt_bus2.res;
+        }   
     }
-    if (station[ALU].Qj<8)
+    if (station[ALU].Qj<QUEUE_SIZE)
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[ALU].Qj) 
         {
-            station_bk[ALU].Qj=8;
+            station_bk[ALU].Qj=QUEUE_SIZE;
             station_bk[ALU].Vj=cmt_bus.res;
-        }  
+        }
+        if (cmt_bus2.valid==1 && cmt_bus2.id==station[ALU].Qj) 
+        {
+            station_bk[ALU].Qj=QUEUE_SIZE;
+            station_bk[ALU].Vj=cmt_bus2.res;
+        }    
+    }
+}
+
+void ALU_2_Module()
+{
+    int res;
+    int bus_user;
+    WORD tmp1,tmp2;
+    memset(&alu_out2_bk,0,sizeof(alu_out));
+    if (!station[ALU2].valid) 
+    {
+        return;
+    }
+    if (station[ALU2].Qi>=QUEUE_SIZE&&station[ALU2].Qj>=QUEUE_SIZE) 
+    {
+        switch (station[ALU2].op)
+        {
+            case ALU_ADD:
+                res = station[ALU2].Vi + station[ALU2].Vj;
+                break;
+
+            case ALU_SUB:
+                res = station[ALU2].Vi - station[ALU2].Vj;
+                break;
+
+            case ALU_SLL:
+                res = station[ALU2].Vi << (station[ALU2].Vj%32);
+                break;
+            
+            case ALU_SLT:
+                res = (station[ALU2].Vi < station[ALU2].Vj)?1:0;
+                break;
+
+            case ALU_SLTU:
+                tmp1=station[ALU2].Vi;
+                tmp2=station[ALU2].Vj;
+                res = (tmp1 < tmp2)?1:0;
+                break;
+
+            case ALU_XOR:
+                res = station[ALU2].Vi ^ station[ALU2].Vj;
+                break;
+
+            case ALU_SRL:
+                tmp1=station[ALU2].Vi;
+                tmp2=station[ALU2].Vj;
+                res= tmp1 >> (tmp2%32);
+                break;
+
+            case ALU_SRA:
+                res = station[ALU2].Vi>>(station[ALU2].Vj%32);
+                break;
+            
+            case ALU_OR:
+                res = station[ALU2].Vi | station[ALU2].Vj;
+                break;
+            
+            case ALU_AND:
+                res = station[ALU2].Vi & station[ALU2].Vj;
+                break;
+            
+            case ALU_AUI:
+                res = station[ALU2].ins_addr+station[ALU2].Vj ;
+                break;
+
+            case ALU_LUI:
+                res = station[ALU2].Vj;
+                break;
+
+            default:
+                break;
+        }
+        alu_out2_bk.id=station[ALU2].id;
+        alu_out2_bk.res=res;
+        alu_out2_bk.valid=1;
+        /*if (cmt_vie_bk==0) 
+        {
+            cmt_vie_bk=ALU2;
+            memset(&station_bk[ALU2],0,sizeof(station[ALU2]));
+        }
+        else */if (cmt_vie_bk2==0) 
+        {
+            cmt_vie_bk2=ALU2;
+            memset(&station_bk[ALU2],0,sizeof(station[ALU2]));
+        }
+    }
+    if (station[ALU2].Qi<QUEUE_SIZE) // snoop Vi from commit bus
+    {
+        if (cmt_bus.valid==1 && cmt_bus.id==station[ALU2].Qi) 
+        {
+            station_bk[ALU2].Qi=QUEUE_SIZE;
+            station_bk[ALU2].Vi=cmt_bus.res;
+        } 
+        if (cmt_bus2.valid==1 && cmt_bus2.id==station[ALU2].Qi) 
+        {
+            station_bk[ALU2].Qi=QUEUE_SIZE;
+            station_bk[ALU2].Vi=cmt_bus2.res;
+        }   
+    }
+    if (station[ALU2].Qj<QUEUE_SIZE)
+    {
+        if (cmt_bus.valid==1 && cmt_bus.id==station[ALU2].Qj) 
+        {
+            station_bk[ALU2].Qj=QUEUE_SIZE;
+            station_bk[ALU2].Vj=cmt_bus.res;
+        }
+        if (cmt_bus2.valid==1 && cmt_bus2.id==station[ALU2].Qj) 
+        {
+            station_bk[ALU2].Qj=QUEUE_SIZE;
+            station_bk[ALU2].Vj=cmt_bus2.res;
+        }    
     }
 }

@@ -6,7 +6,7 @@
  *               : architecture and no-architecture ) and buses (used for transfer  
  * Author        : xiaoziyuan 
  * Last Modified : 2019.03.07
- * Version       : V 0.1
+ * Version       : V 2.0
  ********************************************************************************/
 
 #include "define.h"
@@ -77,17 +77,23 @@ void CycleEnd()
         memcpy(pred,pred_bk,sizeof(pred));
     }
     //memcpy(&deliver12,&deliver12_bk,sizeof(deliver12));
-    deliver12=deliver12_bk;
+    deliver1=deliver1_bk;
+    deliver2=deliver2_bk;
     memcpy(queue,queue_bk,sizeof(queue));
     queue_head=queue_head_bk;
     queue_tail=queue_tail_bk;
-    queue_full=(queue_head==((queue_tail+1)%QUEUE_SIZE)&&queue[queue_head].item_status)?1:0;
+    queue_full=(queue_head==((queue_tail+3)%QUEUE_SIZE)&&queue[queue_head].item_status)?1:0;
+    queue_full|=(queue_head==((queue_tail+2)%QUEUE_SIZE)&&queue[queue_head].item_status)?1:0;
+    queue_full|=(queue_head==((queue_tail+1)%QUEUE_SIZE)&&queue[queue_head].item_status)?1:0;
     queue_full|=(queue_head==queue_tail&&queue[queue_head].item_status)?1:0;
     memcpy(reg,reg_bk,sizeof(reg));
     reg[0]=0;
     memset(issue_write,0,sizeof(issue_write));
     memcpy(station,station_bk,sizeof(station));
     memcpy(&alu_out,&alu_out_bk,sizeof(alu_out));
+    memcpy(&alu_out2,&alu_out2_bk,sizeof(alu_out));
+    memcpy(&load_out,&load_out_bk,sizeof(load_out));
+    memcpy(&load_out2,&load_out2_bk,sizeof(load_out));
     memcpy(&mul_out,&mul_out_bk,sizeof(mul_out));
     memcpy(&csu_out,&csu_out_bk,sizeof(csu_out));
     memcpy(&ju_out,&ju_out_bk,sizeof(ju_out));
@@ -113,27 +119,35 @@ void OutFile() // temporary function for debug
     }
     fclose(fout);
 }
+extern int mem_pc;
+int trash;
 int main()
 { 
     ResetDecodeTable();
     ResetQueue();
     pc5_enble=0;
     MemReset();
-    LoadMemFromHex("../Documents/dhry.hex");
+    LoadMemFromHex("../Documents/coremark1.hex");
     //LoadMemFromFile("in.txt",1,0);
     int i;
-    i=5000000;
+    i=50000000;
     pc=64*1024;    
     while(i--)
     {
         CycleBegin();
         MemUpdateStatus();
+        if (mem_pc>=940) 
+        {
+            trash=1;
+        }
         FetchModule(); 
         QueueModule();
         Issue();
         SUModule();
         LUModule();
+        LU_2_Module();
         ALUModule();
+        ALU_2_Module();
         MULModule();
         CSUModule();
         JUModule();

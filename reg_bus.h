@@ -28,7 +28,7 @@ typedef struct
     WORD ins_pred;
     BYTE jump_if;
     BYTE ins_valid;
-} s_deliver12;
+} s_deliver;
 
 typedef struct 
 {
@@ -37,7 +37,7 @@ typedef struct
 
 typedef struct 
 {
-    int ins;
+    long long ins;
     char hit;
 } s_icache_res;
 

@@ -10,7 +10,7 @@
  ********************************************************************************/
 # ifndef DF_H
 # define DF_H
-# define QUEUE_SIZE 8
+# define QUEUE_SIZE 12
 # define MEM_SIZE   64*1024*1024
 # define CACHE_LINE 32
 # define PRED_SIZE  1024
@@ -32,6 +32,8 @@
 # define LU       4
 # define SU       5
 # define CSU      6
+# define ALU2     11
+# define LU2      14
 
 # define ITEM_FREE 0
 # define UNISSUED  1

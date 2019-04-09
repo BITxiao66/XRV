@@ -6,9 +6,12 @@
  *               : memory has two read ports and two write ports with 100 cyclces  
  *               : access delay . The memory line size equal to 32 bytes and total
  *               : capacity is 64MB .
+ *               : Useage: a write or read request from cache apply a read_count/
+ *               : write_count, when 100 cycles passed ,corresponding mem_ready
+ *               : value change to TRUE ,at that time cache read/write memory line.
  * Author        : xiaoziyuan 
- * Last Modified : 2019.03.07
- * Version       : V 0.1
+ * Last Modified : 2019.04.05
+ * Version       : V 1.0
  ********************************************************************************/
 
 #include "define.h"
@@ -179,7 +182,11 @@ int ApplyWritePort(int cache_port)
  ********************************************************************************/
 char* ReadMemLine(int addr)
 {
-    int p;   
+    int p;
+    if (addr<0) 
+    {
+        mem_arry[addr][addr]=0;
+    }
     for( p = 0; p < CACHE_LINE; p++)
     {
         read_port_data[p]=mem_arry[addr/CACHE_LINE][p];

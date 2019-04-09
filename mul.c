@@ -13,7 +13,7 @@ void MULModule()
     {
         return;
     }
-    if (station[MUL_UNIT].Qi>=8&&station[MUL_UNIT].Qj>=8) 
+    if (station[MUL_UNIT].Qi>=QUEUE_SIZE&&station[MUL_UNIT].Qj>=QUEUE_SIZE) 
     {
         switch (station[MUL_UNIT].op)
         {
@@ -22,7 +22,14 @@ void MULModule()
                 break;
 
             case MUL_DIV:
-                res = station[MUL_UNIT].Vi / station[MUL_UNIT].Vj;
+                if(station[MUL_UNIT].Vj!=0)
+                    res = station[MUL_UNIT].Vi / station[MUL_UNIT].Vj;
+                break;
+
+            case MUL_DIVU:
+                tmp1=station[MUL_UNIT].Vi;
+                tmp2=station[MUL_UNIT].Vj;
+                res = tmp1 / tmp2;
                 break;
 
             case MUL_REM:
@@ -43,21 +50,39 @@ void MULModule()
                 memset(&station_bk[MUL_UNIT],0,sizeof(station[MUL_UNIT]));
             }
         }
+        else if (cmt_vie_bk2==0) 
+        {
+            cmt_vie_bk2=MUL_UNIT;
+            if(issue_write[MUL_UNIT]==0)
+            {
+                memset(&station_bk[MUL_UNIT],0,sizeof(station[MUL_UNIT]));
+            }
+        }
     }
-    if (station[MUL_UNIT].Qi<8) // snoop Vi from commit bus
+    if (station[MUL_UNIT].Qi<QUEUE_SIZE) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[MUL_UNIT].Qi) 
         {
-            station_bk[MUL_UNIT].Qi=8;
+            station_bk[MUL_UNIT].Qi=QUEUE_SIZE;
             station_bk[MUL_UNIT].Vi=cmt_bus.res;
-        }  
+        } 
+        if (cmt_bus2.valid==1 && cmt_bus2.id==station[MUL_UNIT].Qi) 
+        {
+            station_bk[MUL_UNIT].Qi=QUEUE_SIZE;
+            station_bk[MUL_UNIT].Vi=cmt_bus2.res;
+        }   
     }
-    if (station[MUL_UNIT].Qj<8)
+    if (station[MUL_UNIT].Qj<QUEUE_SIZE)
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[MUL_UNIT].Qj) 
         {
-            station_bk[MUL_UNIT].Qj=8;
+            station_bk[MUL_UNIT].Qj=QUEUE_SIZE;
             station_bk[MUL_UNIT].Vj=cmt_bus.res;
-        }  
+        }
+        if (cmt_bus2.valid==1 && cmt_bus2.id==station[MUL_UNIT].Qj) 
+        {
+            station_bk[MUL_UNIT].Qj=QUEUE_SIZE;
+            station_bk[MUL_UNIT].Vj=cmt_bus2.res;
+        }   
     }
 }

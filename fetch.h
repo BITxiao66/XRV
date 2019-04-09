@@ -15,6 +15,5 @@ s_icache_res icache_res;
 int pred[PRED_SIZE];
 int pred_bk[PRED_SIZE];
 BYTE pred_need_fresh;
-s_icache_res IcacheRead(unsigned addr);
 unsigned char type_table[8][10];
 #endif
