@@ -25,7 +25,7 @@ void JUModule()
     {
         return;
     }
-    if (station[JU].Qi>=8&&station[JU].Qj>=8) 
+    if (station[JU].Qi>=QUEUE_SIZE&&station[JU].Qj>=QUEUE_SIZE) 
     {
         switch (station[JU].op)
         {
@@ -90,19 +90,19 @@ void JUModule()
             }
         }
     }
-    if (station[JU].Qi<8) // snoop Vi from commit bus
+    if (station[JU].Qi<QUEUE_SIZE) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[JU].Qi) 
         {
-            station_bk[JU].Qi=8;
+            station_bk[JU].Qi=QUEUE_SIZE;
             station_bk[JU].Vi=cmt_bus.res;
         }  
     }
-    if (station[JU].Qj<8)
+    if (station[JU].Qj<QUEUE_SIZE)
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[JU].Qj) 
         {
-            station_bk[JU].Qj=8;
+            station_bk[JU].Qj=QUEUE_SIZE;
             station_bk[JU].Vj=cmt_bus.res;
         }  
     }

@@ -13,7 +13,7 @@ void MULModule()
     {
         return;
     }
-    if (station[MUL_UNIT].Qi>=8&&station[MUL_UNIT].Qj>=8) 
+    if (station[MUL_UNIT].Qi>=QUEUE_SIZE&&station[MUL_UNIT].Qj>=QUEUE_SIZE) 
     {
         switch (station[MUL_UNIT].op)
         {
@@ -23,6 +23,12 @@ void MULModule()
 
             case MUL_DIV:
                 res = station[MUL_UNIT].Vi / station[MUL_UNIT].Vj;
+                break;
+
+            case MUL_DIVU:
+                tmp1=station[MUL_UNIT].Vi;
+                tmp2=station[MUL_UNIT].Vj;
+                res = tmp1 / tmp2;
                 break;
 
             case MUL_REM:
@@ -44,19 +50,19 @@ void MULModule()
             }
         }
     }
-    if (station[MUL_UNIT].Qi<8) // snoop Vi from commit bus
+    if (station[MUL_UNIT].Qi<QUEUE_SIZE) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[MUL_UNIT].Qi) 
         {
-            station_bk[MUL_UNIT].Qi=8;
+            station_bk[MUL_UNIT].Qi=QUEUE_SIZE;
             station_bk[MUL_UNIT].Vi=cmt_bus.res;
         }  
     }
-    if (station[MUL_UNIT].Qj<8)
+    if (station[MUL_UNIT].Qj<QUEUE_SIZE)
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[MUL_UNIT].Qj) 
         {
-            station_bk[MUL_UNIT].Qj=8;
+            station_bk[MUL_UNIT].Qj=QUEUE_SIZE;
             station_bk[MUL_UNIT].Vj=cmt_bus.res;
         }  
     }

@@ -16,7 +16,7 @@ void WriteReg(BYTE index,WORD value)
 
 void Issue()
 {
-    int p=8;
+    int p=QUEUE_SIZE;
     int i;
     int j;
     for( i = queue_head,j=0; ; i=(i+1)%QUEUE_SIZE)
@@ -40,7 +40,7 @@ void Issue()
             }
         }
     }
-    if (p==8) 
+    if (p==QUEUE_SIZE) 
     {
         return;
     }
@@ -50,7 +50,7 @@ void Issue()
     BYTE Qj=queue[p].Qj;
     int Vi=queue[p].Vi;
     int Vj=queue[p].Vj;
-    if (Qi<40)  // Read vi from queue and result bus
+    if (Qi<32+QUEUE_SIZE)  // Read vi from queue and result bus
     {
         for( i = (p-1+QUEUE_SIZE)%QUEUE_SIZE; i != (queue_head-1+QUEUE_SIZE)%QUEUE_SIZE; i=(i-1+QUEUE_SIZE)%QUEUE_SIZE)
         {
@@ -60,18 +60,18 @@ void Issue()
                 if (queue[i].item_status==FINISH) 
                 {
                     Vi=queue[i].imm;
-                    Qi=40;
+                    Qi=32+QUEUE_SIZE;
                 }
                 if (cmt_bus.valid==1 && cmt_bus.id==i) 
                 {
                     Vi=cmt_bus.res;
-                    Qi=40;
+                    Qi=32+QUEUE_SIZE;
                 }
                 break;
             }
         }
     }
-    if (Qj<40) 
+    if (Qj<32+QUEUE_SIZE) 
     {
         for( i = (p-1+QUEUE_SIZE)%QUEUE_SIZE; i != (queue_head-1+QUEUE_SIZE)%QUEUE_SIZE; i=(i-1+QUEUE_SIZE)%QUEUE_SIZE)
         {
@@ -81,12 +81,12 @@ void Issue()
                 if (queue[i].item_status==FINISH) 
                 {
                     Vj=queue[i].imm;
-                    Qj=40;
+                    Qj=32+QUEUE_SIZE;
                 }
                 if (cmt_bus.valid==1 && cmt_bus.id==i) 
                 {
                     Vj=cmt_bus.res;
-                    Qj=40;
+                    Qj=32+QUEUE_SIZE;
                 }
                 break;
             }
@@ -95,12 +95,12 @@ void Issue()
     if (Qi<32) // Read Vi from RegFile
     {
         Vi=ReadReg(Qi);
-        Qi=40;
+        Qi=32+QUEUE_SIZE;
     }
     if (Qj<32) 
     {
         Vj=ReadReg(Qj);
-        Qj=40;
+        Qj=32+QUEUE_SIZE;
     }
     Qi -= 32;
     Qj -= 32;
@@ -117,7 +117,7 @@ void Issue()
     station_bk[issue_sta].Vj=Vj;
     station_bk[issue_sta].ins_addr=queue[p].ins_addr;
     station_bk[issue_sta].addr_ready=0;
-    if (queue[p].issue_sta==LU && Qi>=8) 
+    if (queue[p].issue_sta==LU && Qi>=QUEUE_SIZE) 
     {
         queue_bk[p].exe_addr=Vi+queue[p].imm; 
         station_bk[issue_sta].addr_ready=1;

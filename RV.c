@@ -113,21 +113,27 @@ void OutFile() // temporary function for debug
     }
     fclose(fout);
 }
+extern int mem_pc;
+int trash;
 int main()
 { 
     ResetDecodeTable();
     ResetQueue();
     pc5_enble=0;
     MemReset();
-    LoadMemFromHex("../Documents/dhry.hex");
+    LoadMemFromHex("../Documents/coremark.hex");
     //LoadMemFromFile("in.txt",1,0);
     int i;
-    i=5000000;
+    i=50000000;
     pc=64*1024;    
     while(i--)
     {
         CycleBegin();
         MemUpdateStatus();
+        if (mem_pc>=30000&&mem_pc%1000==0) 
+        {
+            trash=0;
+        }
         FetchModule(); 
         QueueModule();
         Issue();

@@ -25,7 +25,7 @@ void ALUModule()
     {
         return;
     }
-    if (station[ALU].Qi>=8&&station[ALU].Qj>=8) 
+    if (station[ALU].Qi>=QUEUE_SIZE&&station[ALU].Qj>=QUEUE_SIZE) 
     {
         switch (station[ALU].op)
         {
@@ -75,9 +75,11 @@ void ALUModule()
             
             case ALU_AUI:
                 res = station[ALU].ins_addr+station[ALU].Vj ;
+                break;
 
             case ALU_LUI:
                 res = station[ALU].Vj;
+                break;
 
             default:
                 break;
@@ -94,19 +96,19 @@ void ALUModule()
             }
         }
     }
-    if (station[ALU].Qi<8) // snoop Vi from commit bus
+    if (station[ALU].Qi<QUEUE_SIZE) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[ALU].Qi) 
         {
-            station_bk[ALU].Qi=8;
+            station_bk[ALU].Qi=QUEUE_SIZE;
             station_bk[ALU].Vi=cmt_bus.res;
         }  
     }
-    if (station[ALU].Qj<8)
+    if (station[ALU].Qj<QUEUE_SIZE)
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[ALU].Qj) 
         {
-            station_bk[ALU].Qj=8;
+            station_bk[ALU].Qj=QUEUE_SIZE;
             station_bk[ALU].Vj=cmt_bus.res;
         }  
     }

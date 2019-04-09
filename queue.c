@@ -28,10 +28,10 @@ void QueueModule()
     if (deliver12.issue_sta==ALU) 
     {
         queue_bk[queue_tail].Rd=deliver12.op_rd;
-        queue_bk[queue_tail].Qi=deliver12.data_sel[OP_RS1]?deliver12.op_rs1:40;
+        queue_bk[queue_tail].Qi=deliver12.data_sel[OP_RS1]?deliver12.op_rs1:32+QUEUE_SIZE;
         if (deliver12.data_sel[OP_IMM]) 
         {
-            queue_bk[queue_tail].Qj=40;
+            queue_bk[queue_tail].Qj=32+QUEUE_SIZE;
             queue_bk[queue_tail].Vj=deliver12.op_imm;
         }
         else
@@ -49,7 +49,7 @@ void QueueModule()
     else if(deliver12.issue_sta==LU)
     {
         queue_bk[queue_tail].Qi=deliver12.op_rs1;
-        queue_bk[queue_tail].Qj=40;
+        queue_bk[queue_tail].Qj=32+QUEUE_SIZE;
         queue_bk[queue_tail].Rd=deliver12.op_rd;
         queue_bk[queue_tail].imm=deliver12.op_imm;
         queue_bk[queue_tail].exe_addr= -1;
@@ -58,21 +58,21 @@ void QueueModule()
     {
         queue_bk[queue_tail].Qi=deliver12.op_rs1;
         queue_bk[queue_tail].Qj=deliver12.op_rs2;
-        queue_bk[queue_tail].Rd=40;
+        queue_bk[queue_tail].Rd=32+QUEUE_SIZE;
         queue_bk[queue_tail].imm=deliver12.op_imm;
     }
     else if (deliver12.issue_sta==JU) 
     {
         queue_bk[queue_tail].imm=deliver12.op_imm;
-        queue_bk[queue_tail].Qi=deliver12.data_sel[OP_RS1]?deliver12.op_rs1:40;  
-        queue_bk[queue_tail].Qj=deliver12.data_sel[OP_RS2]?deliver12.op_rs2:40;
-        queue_bk[queue_tail].Rd=deliver12.data_sel[OP_RD]?deliver12.op_rd:40;
+        queue_bk[queue_tail].Qi=deliver12.data_sel[OP_RS1]?deliver12.op_rs1:32+QUEUE_SIZE;  
+        queue_bk[queue_tail].Qj=deliver12.data_sel[OP_RS2]?deliver12.op_rs2:32+QUEUE_SIZE;
+        queue_bk[queue_tail].Rd=deliver12.data_sel[OP_RD]?deliver12.op_rd:32+QUEUE_SIZE;
     }
     else if (deliver12.issue_sta==CSU) 
     {
         queue_bk[queue_tail].Rd=deliver12.op_rd;
         queue_bk[queue_tail].Qi=deliver12.op_rs1;
-        queue_bk[queue_tail].Qj=40;
+        queue_bk[queue_tail].Qj=32+QUEUE_SIZE;
         queue_bk[queue_tail].Vj=deliver12.op_imm;
     }
     queue_tail_bk=(queue_tail+1)%QUEUE_SIZE;

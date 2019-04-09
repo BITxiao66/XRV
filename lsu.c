@@ -416,16 +416,12 @@ void SUModule()
         station_bk[SU].valid=0;
         return;
     }
-    if (station[SU].Vi+station[SU].imm==81224) 
-    {
-        tem[strlen(tem)]=station[SU].Vj;
-    }
     if (DcacheWrite(station[SU].Vi+station[SU].imm,station[SU].Vj,leng)) 
     {
         station_bk[SU].valid=0;
         return;
     }
-    if (dcache_busy) 
+    if (dcache_busy && dcache_user==SU) 
     {
         DcacheSwapWrite(station[SU].Vi+station[SU].imm,station[SU].Vj,leng);
     }
@@ -437,11 +433,11 @@ void LUModule()
     {
         return;
     }
-    if (station[LU].Qi<8)   // snoop Vj from commit bus
+    if (station[LU].Qi<QUEUE_SIZE)   // snoop Vj from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[LU].Qi) 
         {
-            station_bk[LU].Qi=8;
+            station_bk[LU].Qi=QUEUE_SIZE;
             station_bk[LU].Vi=cmt_bus.res;
         }  
     }
@@ -456,7 +452,7 @@ void LUModule()
         {
             DcacheRead(addr);
         }
-        if (dcache_busy) 
+        if (dcache_busy && dcache_user==LU) 
         {
             DcacheSwapRead(addr);
         }

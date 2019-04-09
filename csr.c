@@ -17,7 +17,7 @@ void CSUModule()
     {
         return;
     }
-    if (station[CSU].Qi>=8) 
+    if (station[CSU].Qi>=QUEUE_SIZE) 
     {
         switch (station[CSU].Vj & 0x00000FFF)
         {
@@ -46,11 +46,11 @@ void CSUModule()
             }
         }
     }
-    if (station[CSU].Qi<8) // snoop Vi from commit bus
+    if (station[CSU].Qi<QUEUE_SIZE) // snoop Vi from commit bus
     {
         if (cmt_bus.valid==1 && cmt_bus.id==station[CSU].Qi) 
         {
-            station_bk[CSU].Qi=8;
+            station_bk[CSU].Qi=QUEUE_SIZE;
             station_bk[CSU].Vi=cmt_bus.res;
         }  
     }

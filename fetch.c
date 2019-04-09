@@ -155,6 +155,11 @@ unsigned char RtypeDecode(BYTE op1,BYTE op2,BYTE op3,unsigned char* op_code,unsi
                 *op_code=MUL_DIV;
                 res=1;
                 break;
+            
+            case 5:
+                *op_code=MUL_DIVU;
+                res=1;
+                break;
 
             case 6:
                 *op_code=MUL_REM;
